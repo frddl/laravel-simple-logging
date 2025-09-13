@@ -11,7 +11,7 @@ trait SimpleLoggingTrait
      * Ultra-simple logging - just pass data and it figures out the rest
      * NO DEPENDENCIES - works with ANY data
      */
-    protected function log($message, $data = [], $level = 'info')
+    protected function log($message, $data = [], $level = 'info', $logType = 'action')
     {
         if (! $this->isLoggingEnabled()) {
             return;
@@ -22,14 +22,21 @@ trait SimpleLoggingTrait
             return;
         }
 
+        // Add log type and visual indicators to data
+        $enhancedData = array_merge($data, [
+            'log_type' => $logType,
+            'visual_indicator' => $this->getVisualIndicator($logType, $level, $message),
+            'category' => $this->getLogCategory($logType),
+        ]);
+
         // Log to database if enabled
         if (config('simple-logging.database_logging', true)) {
-            $this->logToDatabase($message, $data, $level);
+            $this->logToDatabase($message, $enhancedData, $level);
         }
 
         // Log to file if enabled
         if (config('simple-logging.file_logging', false)) {
-            Log::log($level, $message, $data);
+            Log::log($level, $message, $enhancedData);
         }
     }
 
@@ -132,13 +139,16 @@ trait SimpleLoggingTrait
     {
         try {
             $sanitizedData = $this->sanitizeData($data);
+            
+            // Enhanced request information
+            $requestInfo = $this->getEnhancedRequestInfo();
 
             LogEntry::create([
                 'request_id' => $this->getRequestId(),
                 'level' => $level,
                 'message' => $message,
-                'context' => $sanitizedData,
-                'properties' => $sanitizedData, // Store sanitized data as properties
+                'context' => array_merge($sanitizedData, $requestInfo),
+                'properties' => array_merge($sanitizedData, $requestInfo), // Store sanitized data as properties
                 'controller' => class_basename($this),
                 'method' => $this->getEntryMethod(), // Use the first method that called logMethod
                 'ip_address' => request()->ip(),
@@ -355,5 +365,197 @@ trait SimpleLoggingTrait
         $minLevelValue = $levels[$minLevel] ?? 1;
 
         return $currentLevel >= $minLevelValue;
+    }
+
+    /**
+     * Determine log type based on method name and options
+     */
+    private function determineLogType($methodName, $options = [])
+    {
+        // Check if log type is explicitly specified in options
+        if (isset($options['log_type'])) {
+            return $options['log_type'];
+        }
+
+        // Determine based on method name patterns
+        $methodName = strtolower($methodName);
+        
+        // Function calls (methods that start with 'get', 'set', 'create', 'update', 'delete', etc.)
+        if (preg_match('/^(get|set|create|update|delete|find|search|load|fetch|retrieve|build|format|process|validate|check|verify)/', $methodName)) {
+            return 'function_call';
+        }
+        
+        // Business logic (methods that contain 'logic', 'process', 'handle', 'execute')
+        if (preg_match('/(logic|process|handle|execute|business|workflow|flow)/', $methodName)) {
+            return 'business_logic';
+        }
+        
+        // Database operations
+        if (preg_match('/(query|database|db|sql|model|save|store)/', $methodName)) {
+            return 'database_operation';
+        }
+        
+        // API/HTTP operations
+        if (preg_match('/(api|http|request|response|endpoint|route)/', $methodName)) {
+            return 'api_operation';
+        }
+        
+        // Configuration/Setup
+        if (preg_match('/(config|setup|init|initialize|configure|install)/', $methodName)) {
+            return 'configuration';
+        }
+        
+        // Default to action
+        return 'action';
+    }
+
+    /**
+     * Get visual indicator based on log type and level
+     */
+    private function getVisualIndicator($logType, $level, $message = '')
+    {
+        $indicators = [
+            'function_call' => [
+                'started' => '🔵',
+                'completed' => '✅',
+                'failed' => '❌',
+                'default' => '⚙️'
+            ],
+            'business_logic' => [
+                'started' => '🟡',
+                'completed' => '✅',
+                'failed' => '❌',
+                'default' => '🧠'
+            ],
+            'database_operation' => [
+                'started' => '🔵',
+                'completed' => '✅',
+                'failed' => '❌',
+                'default' => '🗄️'
+            ],
+            'api_operation' => [
+                'started' => '🟢',
+                'completed' => '✅',
+                'failed' => '❌',
+                'default' => '🌐'
+            ],
+            'configuration' => [
+                'started' => '🟣',
+                'completed' => '✅',
+                'failed' => '❌',
+                'default' => '⚙️'
+            ],
+            'action' => [
+                'started' => '🟠',
+                'completed' => '✅',
+                'failed' => '❌',
+                'default' => '📝'
+            ]
+        ];
+
+        $typeIndicators = $indicators[$logType] ?? $indicators['action'];
+        
+        // Check if message contains status keywords
+        if (strpos($message, 'started') !== false) {
+            return $typeIndicators['started'];
+        } elseif (strpos($message, 'completed') !== false) {
+            return $typeIndicators['completed'];
+        } elseif (strpos($message, 'failed') !== false) {
+            return $typeIndicators['failed'];
+        }
+        
+        return $typeIndicators['default'];
+    }
+
+    /**
+     * Get log category for better organization
+     */
+    private function getLogCategory($logType)
+    {
+        $categories = [
+            'function_call' => 'Function Calls',
+            'business_logic' => 'Business Logic',
+            'database_operation' => 'Database Operations',
+            'api_operation' => 'API Operations',
+            'configuration' => 'Configuration',
+            'action' => 'Actions'
+        ];
+
+        return $categories[$logType] ?? 'Actions';
+    }
+
+    /**
+     * Get enhanced request information
+     */
+    private function getEnhancedRequestInfo()
+    {
+        try {
+            $request = request();
+            
+            return [
+                'request_info' => [
+                    'method' => $request->method(),
+                    'url' => $request->fullUrl(),
+                    'path' => $request->path(),
+                    'query_params' => $request->query(),
+                    'route_name' => $request->route() ? $request->route()->getName() : null,
+                    'route_action' => $request->route() ? $request->route()->getActionName() : null,
+                    'is_ajax' => $request->ajax(),
+                    'is_json' => $request->isJson(),
+                    'wants_json' => $request->wantsJson(),
+                    'content_type' => $request->header('Content-Type'),
+                    'accept' => $request->header('Accept'),
+                    'referer' => $request->header('Referer'),
+                    'origin' => $request->header('Origin'),
+                    'x_requested_with' => $request->header('X-Requested-With'),
+                    'x_forwarded_for' => $request->header('X-Forwarded-For'),
+                    'x_real_ip' => $request->header('X-Real-IP'),
+                    'user_agent' => $request->userAgent(),
+                    'ip_address' => $request->ip(),
+                    'server_name' => $request->server('SERVER_NAME'),
+                    'server_port' => $request->server('SERVER_PORT'),
+                    'https' => $request->secure(),
+                    'timestamp' => now()->toISOString(),
+                ],
+                'headers' => $this->sanitizeHeaders($request->headers->all()),
+                'input_data' => $this->sanitizeData($request->all()),
+                'session_id' => session()->getId(),
+                'user_id' => auth()->id(),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'request_info' => [
+                    'error' => 'Failed to get request info: ' . $e->getMessage(),
+                    'timestamp' => now()->toISOString(),
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Sanitize headers to remove sensitive information
+     */
+    private function sanitizeHeaders($headers)
+    {
+        $sensitiveHeaders = [
+            'authorization',
+            'cookie',
+            'x-api-key',
+            'x-auth-token',
+            'x-csrf-token',
+            'x-session-token',
+        ];
+
+        $sanitized = [];
+        foreach ($headers as $key => $value) {
+            $lowerKey = strtolower($key);
+            if (in_array($lowerKey, $sensitiveHeaders)) {
+                $sanitized[$key] = ['***REDACTED***'];
+            } else {
+                $sanitized[$key] = $value;
+            }
+        }
+
+        return $sanitized;
     }
 }

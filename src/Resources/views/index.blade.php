@@ -14,6 +14,9 @@
             margin-bottom: 8px;
             transition: all 0.2s ease;
             border: 1px solid #e5e7eb;
+            overflow: visible;
+            position: relative;
+            z-index: 1;
         }
         .log-card:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -29,12 +32,49 @@
             gap: 8px;
         }
         .log-content {
-            display: none;
-            padding: 0 16px 16px 16px;
+            display: none !important;
+            padding: 16px;
             border-top: 1px solid #f3f4f6;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            word-wrap: break-word;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .log-content.show {
-            display: block;
+            display: block !important;
+            max-height: none !important;
+            overflow: visible !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        .log-content .tab-content {
+            display: none !important;
+        }
+        .log-content.show .tab-content.active {
+            display: block !important;
+        }
+        .log-card .log-content {
+            display: none !important;
+        }
+        .log-card .log-content.show {
+            display: block !important;
+        }
+        .log-card .log-content .tab-content {
+            display: none !important;
+        }
+        .log-card .log-content.show .tab-content.active {
+            display: block !important;
+        }
+        .log-card .log-content .step-item {
+            display: none !important;
+        }
+        .log-card .log-content.show .tab-content.active .step-item {
+            display: block !important;
         }
         .status-badge {
             padding: 4px 8px;
@@ -87,11 +127,10 @@
             font-weight: 500;
         }
         .tab-content {
-            display: none;
-            padding: 12px;
+            display: none !important;
         }
         .tab-content.active {
-            display: block;
+            display: block !important;
         }
         .tab-button {
             transition: all 0.2s ease;
@@ -113,15 +152,30 @@
             display: flex;
             align-items: flex-start;
             gap: 8px;
+            overflow: visible;
+            word-wrap: break-word;
+            max-width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 2;
+        }
+        .step-item .flex-1 {
+            min-width: 0;
+            overflow: hidden;
+        }
+        .step-item .break-words {
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         .step-icon {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 8px;
+            font-size: 10px;
+            font-weight: bold;
         }
         .step-icon.success {
             background: #10b981;
@@ -135,6 +189,116 @@
             background: #3b82f6;
             color: white;
         }
+        .step-icon.warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .step-icon.debug {
+            background: #6b7280;
+            color: white;
+        }
+        
+        /* Visual indicators for log types */
+        .log-type-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        .log-type-function {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .log-type-business {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        .log-type-database {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .log-type-api {
+            background: #ecfdf5;
+            color: #059669;
+        }
+        .log-type-config {
+            background: #fce7f3;
+            color: #be185d;
+        }
+        .log-type-action {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        /* Category badges */
+        .category-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+        .category-function-calls {
+            background: #e0f2fe;
+            color: #0277bd;
+        }
+        .category-business-logic {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        .category-database-operations {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        .category-api-operations {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        .category-configuration {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+        .category-actions {
+            background: #f5f5f5;
+            color: #424242;
+        }
+        
+        /* HTTP method indicators */
+        .http-method {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-right: 6px;
+        }
+        .http-get {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .http-post {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .http-put {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .http-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .http-patch {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
         .json-viewer {
             background: #1f2937;
             color: #f9fafb;
@@ -142,8 +306,16 @@
             padding: 12px;
             font-family: 'Monaco', 'Menlo', monospace;
             font-size: 11px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
+        }
+        
+        .json-viewer pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-x: auto;
+            max-height: 100%;
         }
         
         /* Mobile-specific styles */
@@ -228,7 +400,7 @@
             <!-- Left Sidebar - Filters -->
             <div id="filters-sidebar" class="w-full lg:w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out fixed lg:relative z-40 h-full left-0 top-0">
                 <!-- Sidebar Header -->
-                <div class="p-4 lg:p-6 border-b border-gray-200">
+                <div class="p-4 lg:p-6 border-b border-gray-200 pb-2">
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-base lg:text-lg font-bold text-gray-900 mb-2">
@@ -313,19 +485,19 @@
                 <div class="p-4 border-t border-gray-200 bg-gray-50">
                     <div class="flex justify-between gap-2">
                         <div class="flex-1 text-center">
-                            <div class="text-lg font-bold text-blue-600" id="total-logs">-</div>
+                            <div class="text-lg font-bold text-blue-600" id="total-logs">{{ $statistics['total_requests'] ?? 0 }}</div>
                             <div class="text-xs text-gray-600">Traces</div>
                         </div>
                         <div class="flex-1 text-center">
-                            <div class="text-lg font-bold text-green-600" id="success-logs">-</div>
+                            <div class="text-lg font-bold text-green-600" id="success-logs">{{ $statistics['info_count'] ?? 0 }}</div>
                             <div class="text-xs text-gray-600">Success</div>
                         </div>
                         <div class="flex-1 text-center">
-                            <div class="text-lg font-bold text-yellow-600" id="warning-logs">-</div>
+                            <div class="text-lg font-bold text-yellow-600" id="warning-logs">{{ $statistics['warning_count'] ?? 0 }}</div>
                             <div class="text-xs text-gray-600">Warnings</div>
                         </div>
                         <div class="flex-1 text-center">
-                            <div class="text-lg font-bold text-red-600" id="error-logs">-</div>
+                            <div class="text-lg font-bold text-red-600" id="error-logs">{{ $statistics['error_count'] ?? 0 }}</div>
                             <div class="text-xs text-gray-600">Errors</div>
                         </div>
                     </div>
@@ -335,7 +507,7 @@
             <!-- Right Content - Main Table View -->
             <div class="flex-1 flex flex-col bg-gray-50 min-h-0">
                 <!-- Main Header -->
-                <div class="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4 pt-4 lg:pt-4">
+                <div class="bg-white shadow-sm border-b border-gray-200 pb-2 px-4 lg:px-6 py-4 pt-4 lg:pt-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="flex items-center">
                             <h2 class="text-lg lg:text-xl font-bold text-gray-900">
@@ -356,7 +528,356 @@
                 <!-- Logs Container -->
                 <div class="flex-1 overflow-y-auto p-4 lg:p-6">
                     <div id="logs-container" class="space-y-3 lg:space-y-4">
-                        <!-- Logs will be loaded here as cards -->
+                        @if(isset($groupedLogs['logs']) && count($groupedLogs['logs']) > 0)
+                            @foreach($groupedLogs['logs'] as $logsArray)
+                                @php
+                                    $requestId = $logsArray[0]['request_id'];
+                                    $mainLog = collect($logsArray)->first(function($log) {
+                                        return strpos($log['message'], 'started') !== false;
+                                    }) ?? $logsArray[0];
+                                    
+                                    // Find the completed log that matches the main method
+                                    $mainMethodName = '';
+                                    if ($mainLog && strpos($mainLog['message'], 'started') !== false) {
+                                        $mainMethodName = str_replace(' started', '', $mainLog['message']);
+                                    }
+                                    
+                                    $completedLog = collect($logsArray)->first(function($log) use ($mainMethodName) {
+                                        return strpos($log['message'], 'completed') !== false && 
+                                               strpos($log['message'], $mainMethodName) !== false;
+                                    });
+                                    $errorLog = collect($logsArray)->first(function($log) {
+                                        return strpos($log['message'], 'failed') !== false;
+                                    });
+                                    
+                                    $status = $errorLog ? 'error' : ($completedLog ? 'success' : 'info');
+                                    // Calculate total request duration from step durations
+                                    $duration = '-';
+                                    $totalDuration = 0;
+                                    foreach ($logsArray as $log) {
+                                        if (isset($log['properties']['duration_ms']) && is_numeric($log['properties']['duration_ms'])) {
+                                            $totalDuration += $log['properties']['duration_ms'];
+                                        }
+                                    }
+                                    if ($totalDuration > 0) {
+                                        $duration = round($totalDuration, 2) . 'ms';
+                                    }
+                                    $stepCount = count($logsArray);
+                                    $hasErrors = collect($logsArray)->contains('level', 'error');
+                                    $hasWarnings = collect($logsArray)->contains('level', 'warning');
+                                    
+                                    $statusClasses = [
+                                        'success' => 'status-success',
+                                        'error' => 'status-error',
+                                        'info' => 'status-info',
+                                        'warning' => 'status-warning'
+                                    ];
+                                    
+                                    $controllerName = $mainLog['controller'] ?? 'Unknown';
+                                    $methodName = $mainLog['method'] ?? 'Unknown';
+                                    $requestInfo = $mainLog['properties']['request_info'] ?? [];
+                                    $httpMethod = $requestInfo['method'] ?? 'UNKNOWN';
+                                @endphp
+                                
+                                <div class="log-card" data-request-id="{{ $requestId }}">
+                                    <div class="log-header" data-request-id="{{ $requestId }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2">
+                                            <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="time text-sm font-medium text-gray-600">{{ \Carbon\Carbon::parse($mainLog['created_at'])->format('g:i:s A') }}</span>
+                                                    <span class="status-badge {{ $statusClasses[$status] }}">{{ strtoupper($status) }}</span>
+                                                    @if($duration !== '-')
+                                                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ $duration }}</span>
+                                                    @endif
+                                                    <span class="http-method http-{{ strtolower($httpMethod) }}">{{ $httpMethod }}</span>
+                                                </div>
+                                                <div class="flex items-center space-x-2 min-w-0">
+                                                    <span class="text-sm font-semibold text-gray-800 truncate">{{ $controllerName }}</span>
+                                                    <span class="text-gray-400 flex-shrink-0">::</span>
+                                                    <span class="text-sm text-blue-600 font-medium truncate">{{ $methodName }}</span>
+                                                </div>
+                                                <div class="flex items-center space-x-2 text-gray-500">
+                                                    <span class="text-xs">{{ $stepCount }} step{{ $stepCount !== 1 ? 's' : '' }}</span>
+                                                    @if($hasErrors)
+                                                        <i class="fas fa-exclamation-circle text-red-500 text-xs"></i>
+                                                    @endif
+                                                    @if($hasWarnings)
+                                                        <i class="fas fa-exclamation-triangle text-yellow-500 text-xs"></i>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center justify-between sm:justify-end space-x-3">
+                                                <div class="text-left sm:text-right">
+                                                    <div class="text-xs text-gray-500 font-mono break-all">{{ $requestId }}</div>
+                                                </div>
+                                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 flex-shrink-0" id="chevron-{{ $requestId }}"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="log-content" id="content-{{ $requestId }}">
+                                        <div class="space-y-3">
+                                            <!-- Summary Info -->
+                                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">Controller:</span>
+                                                        <div class="text-gray-900 font-mono">{{ $controllerName }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">Method:</span>
+                                                        <div class="text-gray-900 font-mono">{{ $methodName }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">Duration:</span>
+                                                        <div class="text-gray-900 font-mono">{{ $duration }}ms</div>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">Steps:</span>
+                                                        <div class="text-gray-900 font-mono">{{ $stepCount }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">HTTP Method:</span>
+                                                        <div class="text-gray-900 font-mono">{{ $httpMethod }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">IP Address:</span>
+                                                        <div class="text-gray-900 font-mono">{{ $requestInfo['ip_address'] ?? 'Unknown' }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">URL:</span>
+                                                        <div class="text-gray-900 font-mono text-xs break-all">{{ $requestInfo['url'] ?? 'Unknown' }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-gray-600 font-medium">User Agent:</span>
+                                                        <div class="text-gray-900 font-mono text-xs break-all">{{ $requestInfo['user_agent'] ?? 'Unknown' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Tabs -->
+                                            <div class="border-b border-gray-200">
+                                                <nav class="flex space-x-1">
+                                                    <button class="tab-button active" data-tab="steps-{{ $requestId }}">
+                                                        <i class="fas fa-list mr-1"></i>Steps
+                                                    </button>
+                                                    <button class="tab-button" data-tab="request-{{ $requestId }}">
+                                                        <i class="fas fa-arrow-right mr-1"></i>Request
+                                                    </button>
+                                                    <button class="tab-button" data-tab="response-{{ $requestId }}">
+                                                        <i class="fas fa-arrow-left mr-1"></i>Response
+                                                    </button>
+                                                    <button class="tab-button" data-tab="headers-{{ $requestId }}">
+                                                        <i class="fas fa-headers mr-1"></i>Headers
+                                                    </button>
+                                                </nav>
+                                            </div>
+
+                                            <!-- Tab Content -->
+                                            <div class="tab-content active" id="steps-{{ $requestId }}">
+                                                <div class="space-y-2" style="max-width: 100%; overflow: visible; box-sizing: border-box; position: relative; z-index: 1;">
+                                                    @foreach(collect($logsArray)->sortBy('created_at') as $log)
+                                                        @php
+                                                            $stepDuration = $log['properties']['duration_ms'] ?? '';
+                                                            $memoryUsed = $log['properties']['memory_used'] ?? '';
+                                                            $hasData = !empty($log['properties']);
+                                                            
+                                                            $depth = $log['call_depth'] ?? 0;
+                                                            $logType = $log['properties']['log_type'] ?? 'action';
+                                                            $visualIndicator = "L{$depth}";
+                                                            $category = $log['properties']['category'] ?? 'Actions';
+                                                            
+                                                            $indentStyle = $depth > 0 ? "margin-left: " . ($depth - 1) . "rem;" : "";
+                                                            
+                                                            $stepIconClass = 'info';
+                                                            if ($log['level'] === 'error' || str_contains($log['message'], 'failed')) {
+                                                                $stepIconClass = 'error';
+                                                            } elseif ($log['level'] === 'warning' || str_contains($log['message'], 'warning')) {
+                                                                $stepIconClass = 'warning';
+                                                            } elseif ($log['level'] === 'debug') {
+                                                                $stepIconClass = 'debug';
+                                                            }
+                                                            
+                                                            $relevantKeys = collect($log['properties'])
+                                                                ->keys()
+                                                                ->reject(function($key) {
+                                                                    return in_array($key, ['duration_ms', 'memory_used', 'log_type', 'visual_indicator', 'category', 'request_info']);
+                                                                })
+                                                                ->values();
+                                                            
+                                                            $dataDisplay = '';
+                                                            if ($hasData) {
+                                                                if (str_contains($log['message'], 'started')) {
+                                                                    $dataDisplay = $relevantKeys->map(function($key) use ($log) {
+                                                                        $value = $log['properties'][$key] ?? 'N/A';
+                                                                        if (is_array($value)) {
+                                                                            $displayValue = '[Array]';
+                                                                        } elseif (is_string($value) && strlen($value) > 15) {
+                                                                            $displayValue = substr($value, 0, 15) . '...';
+                                                                        } else {
+                                                                            $displayValue = $value;
+                                                                        }
+                                                                        return '<span class="inline-block bg-blue-100 hover:bg-blue-200 cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue(\'' . $key . '\', \'' . htmlspecialchars(json_encode($value)) . '\')" title="Click to view full value">' . $key . ': ' . htmlspecialchars($displayValue) . '</span>';
+                                                                    })->join('');
+                                                                } elseif (str_contains($log['message'], 'completed')) {
+                                                                    $completionKeys = collect(['duration_ms', 'memory_used'])->filter(function($key) use ($log) {
+                                                                        return isset($log['properties'][$key]);
+                                                                    });
+                                                                    $otherKeys = $relevantKeys->take(1);
+                                                                    $allKeys = $completionKeys->merge($otherKeys)->take(3);
+                                                                    $dataDisplay = $allKeys->map(function($key) use ($log) {
+                                                                        $value = $log['properties'][$key] ?? 'N/A';
+                                                                        if (is_array($value)) {
+                                                                            $displayValue = '[Array]';
+                                                                        } elseif (is_string($value) && strlen($value) > 15) {
+                                                                            $displayValue = substr($value, 0, 15) . '...';
+                                                                        } else {
+                                                                            $displayValue = $value;
+                                                                        }
+                                                                        return '<span class="inline-block bg-green-100 hover:bg-green-200 cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue(\'' . $key . '\', \'' . htmlspecialchars(json_encode($value)) . '\')" title="Click to view full value">' . $key . ': ' . htmlspecialchars($displayValue) . '</span>';
+                                                                    })->join('');
+                                                                } else {
+                                                                    $dataDisplay = $relevantKeys->map(function($key) use ($log) {
+                                                                        $value = $log['properties'][$key] ?? 'N/A';
+                                                                        if (is_array($value)) {
+                                                                            $displayValue = '[Array]';
+                                                                        } elseif (is_string($value) && strlen($value) > 15) {
+                                                                            $displayValue = substr($value, 0, 15) . '...';
+                                                                        } else {
+                                                                            $displayValue = $value;
+                                                                        }
+                                                                        return '<span class="inline-block bg-gray-100 hover:bg-gray-200 cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue(\'' . $key . '\', \'' . htmlspecialchars(json_encode($value)) . '\')" title="Click to view full value">' . $key . ': ' . htmlspecialchars($displayValue) . '</span>';
+                                                                    })->join('');
+                                                                }
+                                                            }
+                                                        @endphp
+                                                        
+                                                        <div class="step-item" style="{{ $indentStyle }} max-width: calc(100% - {{ $depth > 0 ? ($depth - 1) * 1 : 0 }}rem); box-sizing: border-box; position: relative; z-index: 2;">
+                                                            <div class="flex items-start space-x-3" style="max-width: 100%; box-sizing: border-box; overflow: visible;">
+                                                                <div class="step-icon {{ $stepIconClass }} flex-shrink-0">
+                                                                    {{ $visualIndicator }}
+                                                                </div>
+                                                                <div class="flex-1 min-w-0">
+                                                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                                        <div class="flex items-center flex-wrap gap-2">
+                                                                            <p class="font-medium text-gray-900 text-sm break-words">{{ $log['message'] }}</p>
+                                                                            <span class="category-badge category-{{ strtolower(str_replace(' ', '-', $category)) }}">{{ $category }}</span>
+                                                                            @if($depth > 0)
+                                                                                <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Level {{ $depth }}</span>
+                                                                            @endif
+                                                                        </div>
+                                                                        <div class="flex items-center space-x-2 text-xs text-gray-500">
+                                                                            <span>{{ \Carbon\Carbon::parse($log['created_at'])->format('g:i:s A') }}</span>
+                                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ $stepIconClass === 'error' ? 'bg-red-100 text-red-800' : ($stepIconClass === 'warning' ? 'bg-yellow-100 text-yellow-800' : ($stepIconClass === 'debug' ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800')) }}">
+                                                                                {{ $log['level'] }}
+                                                                            </span>
+                                                                            @if($stepDuration)
+                                                                                <span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs" title="Duration: {{ $stepDuration }}ms">
+                                                                                    {{ $stepDuration }}ms
+                                                                                </span>
+                                                                            @endif
+                                                                        </div>
+                                                                    </div>
+                                                                    @if($memoryUsed)
+                                                                        <div class="mt-1 text-xs text-gray-600">
+                                                                            <span class="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded" title="Memory: {{ number_format($memoryUsed / 1024, 1) }}KB">
+                                                                                {{ number_format($memoryUsed / 1024, 1) }}KB
+                                                                            </span>
+                                                                        </div>
+                                                                    @endif
+                                                                    @if($hasData && $dataDisplay)
+                                                                        <div class="mt-1 text-xs text-gray-600">
+                                                                            {!! $dataDisplay !!}
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Other tabs content would go here -->
+                                            <div class="tab-content" id="request-{{ $requestId }}">
+                                                <div class="space-y-4">
+                                                    <h3 class="text-lg font-medium text-gray-900">Request Information</h3>
+                                                    <div class="bg-gray-50 rounded-lg p-4">
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">Method:</span>
+                                                                <div class="text-gray-900 font-mono">{{ $httpMethod }}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">URL:</span>
+                                                                <div class="text-gray-900 font-mono text-xs break-all">{{ $requestInfo['url'] ?? 'Unknown' }}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">IP Address:</span>
+                                                                <div class="text-gray-900 font-mono">{{ $requestInfo['ip_address'] ?? 'Unknown' }}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">User Agent:</span>
+                                                                <div class="text-gray-900 font-mono text-xs break-all">{{ $requestInfo['user_agent'] ?? 'Unknown' }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <h3 class="text-lg font-medium text-gray-900">Request Data</h3>
+                                                    <div class="bg-gray-50 rounded-lg p-4">
+                                                        <pre class="text-xs text-gray-700 overflow-x-auto">{{ json_encode($requestInfo, JSON_PRETTY_PRINT) }}</pre>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="tab-content" id="response-{{ $requestId }}">
+                                                <div class="space-y-4">
+                                                    <h3 class="text-lg font-medium text-gray-900">Response Information</h3>
+                                                    <div class="bg-gray-50 rounded-lg p-4">
+                                                        <p class="text-gray-600">Response data would be displayed here if available.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="tab-content" id="headers-{{ $requestId }}">
+                                                <div class="space-y-4">
+                                                    <h3 class="text-lg font-medium text-gray-900">Request Headers</h3>
+                                                    <div class="bg-gray-50 rounded-lg p-4">
+                                                        <pre class="text-xs text-gray-700 overflow-x-auto">{{ json_encode($requestInfo['headers'] ?? [], JSON_PRETTY_PRINT) }}</pre>
+                                                    </div>
+                                                    <h3 class="text-lg font-medium text-gray-900">Additional Request Info</h3>
+                                                    <div class="bg-gray-50 rounded-lg p-4">
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">Route Name:</span>
+                                                                <div class="text-gray-900 font-mono">{{ $requestInfo['route_name'] ?? 'Unknown' }}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">Route Action:</span>
+                                                                <div class="text-gray-900 font-mono">{{ $requestInfo['route_action'] ?? 'Unknown' }}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">Session ID:</span>
+                                                                <div class="text-gray-900 font-mono text-xs break-all">{{ $requestInfo['session_id'] ?? 'Unknown' }}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span class="text-gray-600 font-medium">User ID:</span>
+                                                                <div class="text-gray-900 font-mono">{{ $requestInfo['user_id'] ?? 'Unknown' }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <div class="text-center py-8">
+                                <div class="text-gray-500 text-lg">No logs found</div>
+                                <div class="text-gray-400 text-sm mt-2">Try adjusting your filters or check back later</div>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -377,6 +898,9 @@
 
         // Load logs grouped by request_id
         function loadLogs(page = 1) {
+            // Clear expanded rows when loading new logs
+            expandedRows.clear();
+            
             const perPage = document.getElementById('per-page').value;
             const filters = {
                 ...currentFilters,
@@ -395,7 +919,7 @@
                 .then(data => {
                     displayLogs(data.logs);
                     displayPagination(data.pagination);
-                    updateStatistics(data.statistics);
+                    // Statistics are now handled server-side only
                     currentPage = page;
                 })
                 .catch(error => {
@@ -452,19 +976,26 @@
                 const stepCount = logsArray.length;
                 const hasErrors = logsArray.some(log => log.level === 'error');
                 const hasWarnings = logsArray.some(log => log.level === 'warning');
+                
+                // Get enhanced request information
+                const requestInfo = mainLog.properties?.request_info || {};
+                const httpMethod = requestInfo.method || 'UNKNOWN';
+                const requestUrl = requestInfo.url || requestInfo.path || 'Unknown';
+                const userAgent = requestInfo.user_agent || 'Unknown';
+                const ipAddress = requestInfo.ip_address || 'Unknown';
 
                 card.innerHTML = `
-                    <div class="log-header" onclick="toggleCard('${requestId}')">
+                    <div class="log-header" data-request-id="${requestId}">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2">
                             <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                                 <div class="flex items-center space-x-2">
                                     <span class="time text-sm font-medium text-gray-600">${new Date(mainLog.created_at).toLocaleTimeString()}</span>
-                                    <span class="status-badge ${statusClasses[status]}">${status.toUpperCase()}</span>
-                                </div>
-                                <div class="flex items-center space-x-2 min-w-0">
-                                    <span class="text-sm font-semibold text-gray-800 truncate">${controllerName}</span>
-                                    <span class="text-gray-400 flex-shrink-0">::</span>
+                                    <span class="http-method http-${httpMethod.toLowerCase()}">${httpMethod}</span>
                                     <span class="text-sm text-blue-600 font-medium truncate">${methodName}</span>
+                                    <span class="text-gray-400 flex-shrink-0">@</span>
+                                    <span class="text-sm font-semibold text-gray-800 truncate">${controllerName}</span>
+                                    <span class="status-badge ${statusClasses[status]}">${status.toUpperCase()}</span>
+                                    ${duration !== '-' ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${duration}ms</span>` : ''}
                                 </div>
                                 <div class="flex items-center space-x-2 text-gray-500">
                                     <span class="text-xs">${stepCount} step${stepCount !== 1 ? 's' : ''}</span>
@@ -474,7 +1005,6 @@
                             </div>
                             <div class="flex items-center justify-between sm:justify-end space-x-3">
                                 <div class="text-left sm:text-right">
-                                    <div class="text-sm font-medium text-gray-700">${duration}ms</div>
                                     <div class="text-xs text-gray-500 font-mono break-all">${requestId}</div>
                                 </div>
                                 <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 flex-shrink-0" id="chevron-${requestId}"></i>
@@ -503,6 +1033,20 @@
                                         <div class="text-gray-900 font-mono">${stepCount}</div>
                                     </div>
                                 </div>
+                                <div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-600 font-medium">HTTP Method:</span>
+                                        <span class="http-method http-${httpMethod.toLowerCase()} ml-2">${httpMethod}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600 font-medium">IP Address:</span>
+                                        <span class="text-gray-900 font-mono ml-2">${ipAddress}</span>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <span class="text-gray-600 font-medium">URL:</span>
+                                        <span class="text-gray-900 font-mono ml-2 break-all">${requestUrl}</span>
+                                    </div>
+                                </div>
                                 <div class="mt-3 pt-3 border-t border-gray-200">
                                     <span class="text-gray-600 font-medium">Trace ID:</span>
                                     <span class="text-gray-900 font-mono text-sm">${requestId}</span>
@@ -510,7 +1054,7 @@
                             </div>
                             
                             <!-- Tabs -->
-                            <div class="border-b border-gray-200">
+                            <div class="border-b border-gray-200 pb-2">
                                 <nav class="flex space-x-1">
                                     <button class="tab-button active" data-tab="steps-${requestId}">
                                         <i class="fas fa-list mr-1"></i>Steps
@@ -528,7 +1072,7 @@
                             </div>
 
                             <!-- Tab Content -->
-                            <div class="tab-content active" id="steps-${requestId}">
+                            <div class="tab-content" id="steps-${requestId}">
                                 <div class="space-y-2">
                                     ${logsArray
                                         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
@@ -537,17 +1081,43 @@
                                             const memoryUsed = log.properties?.memory_used ? `${Math.round(log.properties.memory_used / 1024)}KB` : '';
                                             const hasData = log.properties && Object.keys(log.properties).length > 0;
                                             
+                                            // Get call depth from database
+                                            const depth = log.call_depth || 0;
+                                            
+                                            // Get visual indicators and categories from properties
+                                            const logType = log.properties?.log_type || 'action';
+                                            const visualIndicator = `L${depth}`; // Show level instead of emoji
+                                            const category = log.properties?.category || 'Actions';
+                                            
+                                            // Create indentation based on depth (first step starts at left)
+                                            const indentClass = depth <= 1 ? 'ml-0' : `ml-${Math.min((depth - 1) * 4, 16)}`;
+                                            const indentStyle = depth <= 1 ? 'margin-left: 0;' : `margin-left: ${(depth - 1) * 1}rem;`;
+                                            
+                                            // Determine step icon class based on level
+                                            let stepIconClass = 'info';
+                                            if (log.level === 'error' || log.message.includes('failed')) {
+                                                stepIconClass = 'error';
+                                            } else if (log.level === 'warning') {
+                                                stepIconClass = 'warning';
+                                            } else if (log.message.includes('completed')) {
+                                                stepIconClass = 'success';
+                                            } else if (log.level === 'debug') {
+                                                stepIconClass = 'debug';
+                                            }
+                                            
                                             return `
-                                        <div class="step-item">
-                                            <div class="step-icon ${log.message.includes('completed') ? 'success' : log.message.includes('failed') ? 'error' : 'info'}">
-                                                ${log.message.includes('started') ? '▶' : 
-                                                  log.message.includes('completed') ? '✓' : 
-                                                  log.message.includes('failed') ? '✕' : 
-                                                  '●'}
+                                        <div class="step-item" style="${indentStyle}">
+                                            <div class="flex items-start space-x-3">
+                                                <div class="step-icon ${stepIconClass} flex-shrink-0">
+                                                    ${visualIndicator}
                                             </div>
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                        <div class="flex items-center flex-wrap gap-2">
                                                     <p class="font-medium text-gray-900 text-sm break-words">${log.message}</p>
+                                                            <span class="category-badge category-${category.toLowerCase().replace(/\s+/g, '-')}">${category}</span>
+                                                            ${depth > 0 ? `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Level ${depth}</span>` : ''}
+                                                        </div>
                                                     <div class="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
                                                         ${stepDuration ? `<span class="font-mono">${stepDuration}</span>` : ''}
                                                         ${memoryUsed ? `<span class="font-mono">${memoryUsed}</span>` : ''}
@@ -560,15 +1130,31 @@
                                                 ${hasData ? `
                                                     <div class="mt-1 text-xs text-gray-600">
                                                         <span class="font-medium">Data:</span> 
-                                                        ${Object.keys(log.properties)
-                                                            .filter(key => !['duration_ms', 'memory_used'].includes(key))
-                                                            .slice(0, 3)
-                                                            .map(key => 
-                                                                `<span class="inline-block bg-gray-100 px-1 rounded mr-1 cursor-pointer hover:bg-gray-200 transition-colors" onclick="showAllData('${requestId}', '${log.id}')" title="Click to view all data">${key}</span>`
-                                                            ).join('')}
-                                                        ${Object.keys(log.properties).filter(key => !['duration_ms', 'memory_used'].includes(key)).length > 3 ? `<span class="text-gray-400 cursor-pointer hover:text-gray-600" onclick="showAllData('${requestId}', '${log.id}')" title="Click to view all data">+${Object.keys(log.properties).filter(key => !['duration_ms', 'memory_used'].includes(key)).length - 3} more</span>` : ''}
+                                                        ${(() => {
+                                                            const relevantKeys = Object.keys(log.properties)
+                                                                .filter(key => !['duration_ms', 'memory_used', 'log_type', 'visual_indicator', 'category', 'request_info'].includes(key));
+                                                            
+                                                            // Show specific data based on log type
+                                                            if (log.message.includes('started')) {
+                                                                return relevantKeys.slice(0, 2).map(key => 
+                                                                    `<span class="inline-block bg-blue-100 px-1 rounded mr-1">${key}</span>`
+                                                                ).join('') + (relevantKeys.length > 2 ? `<span class="text-gray-400">+${relevantKeys.length - 2} more</span>` : '');
+                                                            } else if (log.message.includes('completed')) {
+                                                                const completionKeys = ['duration_ms', 'memory_used'].filter(key => log.properties[key]);
+                                                                const otherKeys = relevantKeys.slice(0, 1);
+                                                                return [...completionKeys, ...otherKeys].slice(0, 3).map(key => 
+                                                                    `<span class="inline-block bg-green-100 px-1 rounded mr-1">${key}</span>`
+                                                                ).join('') + (([...completionKeys, ...otherKeys].length > 3) ? `<span class="text-gray-400">+${[...completionKeys, ...otherKeys].length - 3} more</span>` : '');
+                                                            } else {
+                                                                return relevantKeys.slice(0, 3).map(key => 
+                                                                    `<span class="inline-block bg-gray-100 px-1 rounded mr-1">${key}</span>`
+                                                                ).join('') + (relevantKeys.length > 3 ? `<span class="text-gray-400">+${relevantKeys.length - 3} more</span>` : '');
+                                                            }
+                                                        })()}
                                                     </div>
                                                 ` : ''}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     `;
@@ -577,8 +1163,34 @@
                             </div>
 
                             <div class="tab-content" id="request-${requestId}">
+                                <div class="space-y-4">
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <h4 class="font-semibold text-blue-900 mb-2">Request Information</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span class="text-blue-700 font-medium">Method:</span>
+                                                <span class="http-method http-${httpMethod.toLowerCase()} ml-2">${httpMethod}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-blue-700 font-medium">URL:</span>
+                                                <span class="text-blue-900 font-mono ml-2 break-all">${requestUrl}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-blue-700 font-medium">IP Address:</span>
+                                                <span class="text-blue-900 font-mono ml-2">${ipAddress}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-blue-700 font-medium">User Agent:</span>
+                                                <span class="text-blue-900 ml-2 break-all">${userAgent}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-900 mb-2">Request Data</h4>
                                 <div class="json-viewer">
                                     <pre>${JSON.stringify(mainLog.properties.request_data || {}, null, 2)}</pre>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -589,8 +1201,34 @@
                             </div>
 
                             <div class="tab-content" id="headers-${requestId}">
-                                <div class="json-viewer">
-                                    <pre>${JSON.stringify(mainLog.properties.request_headers || {}, null, 2)}</pre>
+                                <div class="space-y-4">
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                        <h4 class="font-semibold text-green-900 mb-2">Request Headers</h4>
+                                        <div class="json-viewer">
+                                            <pre>${JSON.stringify(requestInfo.request_info?.headers || requestInfo.headers || {}, null, 2)}</pre>
+                                        </div>
+                                    </div>
+                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                        <h4 class="font-semibold text-yellow-900 mb-2">Additional Request Info</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span class="text-yellow-700 font-medium">Route Name:</span>
+                                                <span class="text-yellow-900 ml-2">${requestInfo.request_info?.route_name || requestInfo.route_name || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-yellow-700 font-medium">Route Action:</span>
+                                                <span class="text-yellow-900 ml-2">${requestInfo.request_info?.route_action || requestInfo.route_action || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-yellow-700 font-medium">Session ID:</span>
+                                                <span class="text-yellow-900 font-mono ml-2">${requestInfo.session_id || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-yellow-700 font-medium">User ID:</span>
+                                                <span class="text-yellow-900 ml-2">${requestInfo.user_id || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -598,6 +1236,23 @@
                 `;
 
                 container.appendChild(card);
+            });
+            
+            // Add event delegation for card clicks
+            container.addEventListener('click', function(e) {
+                const logHeader = e.target.closest('.log-header');
+                if (logHeader) {
+                    const requestId = logHeader.getAttribute('data-request-id');
+                    if (requestId) {
+                        toggleCard(requestId);
+                    }
+                }
+            });
+            
+            // Ensure all cards start collapsed
+            container.querySelectorAll('.log-content').forEach(content => {
+                content.classList.remove('show');
+                console.log('Collapsing content:', content.id, 'has show class:', content.classList.contains('show'));
             });
         }
 
@@ -638,6 +1293,19 @@
                 chevron.classList.add('fa-chevron-up');
                 chevron.style.transform = 'rotate(180deg)';
                 expandedRows.add(requestId);
+                
+                // Activate the first tab (Steps) when expanding
+                const firstTab = content.querySelector('.tab-content');
+                const firstTabButton = content.querySelector('.tab-button');
+                if (firstTab && firstTabButton) {
+                    // Remove active from all tabs in this card
+                    content.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                    content.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    
+                    // Activate first tab
+                    firstTab.classList.add('active');
+                    firstTabButton.classList.add('active');
+                }
             }
         }
 
@@ -856,6 +1524,17 @@
             stopLiveMode();
         });
 
+        // Show data value in popup
+        function showDataValue(key, value) {
+            try {
+                const parsedValue = JSON.parse(value);
+                const formattedValue = typeof parsedValue === 'object' ? JSON.stringify(parsedValue, null, 2) : parsedValue;
+                alert(`${key}: ${formattedValue}`);
+            } catch (e) {
+                alert(`${key}: ${value}`);
+            }
+        }
+
         // Data viewing functions
         function showAllData(requestId, logId) {
             // Find the log entry in the current logs array
@@ -890,7 +1569,7 @@
                 modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
                 modal.innerHTML = `
                     <div class="bg-white rounded-lg shadow-xl max-w-4xl max-h-[80vh] w-full mx-4">
-                        <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-200 pb-2">
                             <h3 class="text-lg font-semibold text-gray-900" id="modal-title">Data Viewer</h3>
                             <button onclick="closeDataModal()" class="text-gray-400 hover:text-gray-600">
                                 <i class="fas fa-times text-xl"></i>

@@ -18,8 +18,136 @@ class LogViewerController extends Controller
     public function index(Request $request): View
     {
         $levels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
+        
+        // Get grouped logs for initial display
+        $perPage = $request->get('per_page', 10);
+        $groupedLogs = $this->getGroupedLogs($request, $perPage);
+        
+        // Get statistics for initial display
+        $statistics = $this->getStatistics($request);
+        
+        return view('simple-logging::index', compact('levels', 'groupedLogs', 'statistics'));
+    }
 
-        return view('simple-logging::index', compact('levels'));
+    /**
+     * Get grouped logs for display
+     */
+    private function getGroupedLogs(Request $request, int $perPage = 10): array
+    {
+        $page = $request->get('page', 1);
+        $offset = ($page - 1) * $perPage;
+
+        // Get unique request_ids ordered by their latest log timestamp
+        $requestQuery = LogEntry::query();
+        
+        // Apply filters
+        if ($request->filled('level')) {
+            $requestQuery->where('level', $request->level);
+        }
+        if ($request->filled('type')) {
+            $requestQuery->whereJsonContains('context->type', $request->type);
+        }
+        if ($request->filled('date_from')) {
+            $requestQuery->where('created_at', '>=', Carbon::parse($request->date_from));
+        }
+        if ($request->filled('date_to')) {
+            $requestQuery->where('created_at', '<=', Carbon::parse($request->date_to));
+        }
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $requestQuery->where(function ($q) use ($searchTerm) {
+                $q->where('message', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('context', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('properties', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('request_id', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('controller', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('method', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('url', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('ip_address', 'like', '%' . $searchTerm . '%');
+            });
+        }
+        if ($request->filled('property_key') && $request->filled('property_value')) {
+            $requestQuery->whereJsonContains('properties->' . $request->property_key, $request->property_value);
+        }
+        if ($request->filled('has_property')) {
+            $requestQuery->whereNotNull('properties->' . $request->has_property);
+        }
+        if ($request->filled('property_search')) {
+            $requestQuery->where('properties', 'like', '%' . $request->property_search . '%');
+        }
+        
+        $requestIds = $requestQuery->select('request_id')
+            ->selectRaw('MAX(created_at) as latest_log_time')
+            ->groupBy('request_id')
+            ->orderBy('latest_log_time', 'desc')
+            ->offset($offset)
+            ->limit($perPage)
+            ->pluck('request_id')
+            ->toArray();
+
+        // Get total count for pagination
+        $totalQuery = LogEntry::query();
+        
+        // Apply same filters to total count query
+        if ($request->filled('level')) {
+            $totalQuery->where('level', $request->level);
+        }
+        if ($request->filled('type')) {
+            $totalQuery->whereJsonContains('context->type', $request->type);
+        }
+        if ($request->filled('date_from')) {
+            $totalQuery->where('created_at', '>=', Carbon::parse($request->date_from));
+        }
+        if ($request->filled('date_to')) {
+            $totalQuery->where('created_at', '<=', Carbon::parse($request->date_to));
+        }
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $totalQuery->where(function ($q) use ($searchTerm) {
+                $q->where('message', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('context', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('properties', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('request_id', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('controller', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('method', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('url', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('ip_address', 'like', '%' . $searchTerm . '%');
+            });
+        }
+        if ($request->filled('property_key') && $request->filled('property_value')) {
+            $totalQuery->whereJsonContains('properties->' . $request->property_key, $request->property_value);
+        }
+        if ($request->filled('has_property')) {
+            $totalQuery->whereNotNull('properties->' . $request->has_property);
+        }
+        if ($request->filled('property_search')) {
+            $totalQuery->where('properties', 'like', '%' . $request->property_search . '%');
+        }
+
+        $totalRequests = $totalQuery->select('request_id')->distinct()->get()->count();
+
+        // Get all logs for these request_ids, maintaining the order from $requestIds
+        $logs = collect($requestIds)->map(function ($requestId) {
+            return LogEntry::where('request_id', $requestId)
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->toArray();
+        })->toArray();
+
+        // Process logs for display
+        $processedLogs = $this->processLogsForDisplay($logs);
+
+        return [
+            'logs' => $processedLogs,
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $totalRequests,
+                'last_page' => ceil($totalRequests / $perPage),
+                'has_more' => $page < ceil($totalRequests / $perPage),
+            ],
+            'statistics' => $this->getStatistics($request),
+        ];
     }
 
     /**
@@ -84,10 +212,16 @@ class LogViewerController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('message', 'like', '%' . $request->search . '%')
-                  ->orWhere('context', 'like', '%' . $request->search . '%')
-                  ->orWhere('properties', 'like', '%' . $request->search . '%');
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('message', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('context', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('properties', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('request_id', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('controller', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('method', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('url', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('ip_address', 'like', '%' . $searchTerm . '%');
             });
         }
 
@@ -112,13 +246,54 @@ class LogViewerController extends Controller
             $page = $request->get('page', 1);
             $offset = ($page - 1) * $perPage;
 
-            // Get unique request_ids first, then get all logs for those requests
-            $requestIds = $query->select('request_id')
-                ->distinct()
-                ->orderBy('created_at', 'desc')
+            // Get unique request_ids ordered by their latest log timestamp
+            // Create a fresh query to avoid conflicts with existing ordering
+            $requestQuery = LogEntry::query();
+            
+            // Apply same filters to request query
+            if ($request->filled('level')) {
+                $requestQuery->where('level', $request->level);
+            }
+            if ($request->filled('type')) {
+                $requestQuery->whereJsonContains('context->type', $request->type);
+            }
+            if ($request->filled('date_from')) {
+                $requestQuery->where('created_at', '>=', Carbon::parse($request->date_from));
+            }
+            if ($request->filled('date_to')) {
+                $requestQuery->where('created_at', '<=', Carbon::parse($request->date_to));
+            }
+            if ($request->filled('search')) {
+                $searchTerm = $request->search;
+                $requestQuery->where(function ($q) use ($searchTerm) {
+                    $q->where('message', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('context', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('properties', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('request_id', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('controller', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('method', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('url', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('ip_address', 'like', '%' . $searchTerm . '%');
+                });
+            }
+            if ($request->filled('property_key') && $request->filled('property_value')) {
+                $requestQuery->whereJsonContains('properties->' . $request->property_key, $request->property_value);
+            }
+            if ($request->filled('has_property')) {
+                $requestQuery->whereNotNull('properties->' . $request->has_property);
+            }
+            if ($request->filled('property_search')) {
+                $requestQuery->where('properties', 'like', '%' . $request->property_search . '%');
+            }
+            
+            $requestIds = $requestQuery->select('request_id')
+                ->selectRaw('MAX(created_at) as latest_log_time')
+                ->groupBy('request_id')
+                ->orderBy('latest_log_time', 'desc')
                 ->offset($offset)
                 ->limit($perPage)
-                ->pluck('request_id');
+                ->pluck('request_id')
+                ->toArray();
 
             // Get total count for pagination (recreate query with same filters)
             $totalQuery = LogEntry::query();
@@ -137,10 +312,16 @@ class LogViewerController extends Controller
                 $totalQuery->where('created_at', '<=', Carbon::parse($request->date_to));
             }
             if ($request->filled('search')) {
-                $totalQuery->where(function ($q) use ($request) {
-                    $q->where('message', 'like', '%' . $request->search . '%')
-                      ->orWhere('context', 'like', '%' . $request->search . '%')
-                      ->orWhere('properties', 'like', '%' . $request->search . '%');
+                $searchTerm = $request->search;
+                $totalQuery->where(function ($q) use ($searchTerm) {
+                    $q->where('message', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('context', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('properties', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('request_id', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('controller', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('method', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('url', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('ip_address', 'like', '%' . $searchTerm . '%');
                 });
             }
             if ($request->filled('property_key') && $request->filled('property_value')) {
@@ -155,16 +336,13 @@ class LogViewerController extends Controller
 
             $totalRequests = $totalQuery->select('request_id')->distinct()->get()->count();
 
-            // Get all logs for these request_ids
-            $logs = LogEntry::whereIn('request_id', $requestIds)
-                ->orderBy('created_at', 'asc')
-                ->get()
-                ->groupBy('request_id')
-                ->map(function ($group) {
-                    return $group->toArray();
-                })
-                ->values()
-                ->toArray();
+            // Get all logs for these request_ids, maintaining the order from $requestIds
+            $logs = collect($requestIds)->map(function ($requestId) {
+                return LogEntry::where('request_id', $requestId)
+                    ->orderBy('created_at', 'asc')
+                    ->get()
+                    ->toArray();
+            })->toArray();
 
             return response()->json([
                 'logs' => $logs,
@@ -247,14 +425,270 @@ class LogViewerController extends Controller
     }
 
     /**
+     * Process logs for display - move all logic from Blade to controller
+     */
+    private function processLogsForDisplay(array $logs): array
+    {
+        return collect($logs)->map(function ($logsArray) {
+            $requestId = $logsArray[0]['request_id'];
+            
+            // Find main log (started) and completed log
+            $mainLog = collect($logsArray)->first(function($log) {
+                return strpos($log['message'], 'started') !== false;
+            }) ?? $logsArray[0];
+            
+            // Find the completed log that matches the main method
+            $mainMethodName = '';
+            if ($mainLog && strpos($mainLog['message'], 'started') !== false) {
+                $mainMethodName = str_replace(' started', '', $mainLog['message']);
+            }
+            
+            $completedLog = collect($logsArray)->first(function($log) use ($mainMethodName) {
+                return strpos($log['message'], 'completed') !== false && 
+                       strpos($log['message'], $mainMethodName) !== false;
+            });
+            
+            $errorLog = collect($logsArray)->first(function($log) {
+                return strpos($log['message'], 'failed') !== false;
+            });
+            
+            // Calculate status
+            $status = $errorLog ? 'error' : ($completedLog ? 'success' : 'info');
+            
+            // Calculate total duration from step durations
+            $totalDuration = 0;
+            foreach ($logsArray as $log) {
+                if (isset($log['properties']['duration_ms']) && is_numeric($log['properties']['duration_ms'])) {
+                    $totalDuration += $log['properties']['duration_ms'];
+                }
+            }
+            $duration = $totalDuration > 0 ? round($totalDuration, 2) . 'ms' : '-';
+            
+            // Process steps for display
+            $steps = $this->processStepsForDisplay($logsArray);
+            
+            // Extract request info
+            $requestInfo = $this->extractRequestInfo($mainLog);
+            
+            return [
+                'request_id' => $requestId,
+                'main_log' => $this->addMicrosecondPrecision($mainLog),
+                'status' => $status,
+                'duration' => $duration,
+                'step_count' => count($logsArray),
+                'has_errors' => collect($logsArray)->contains('level', 'error'),
+                'has_warnings' => collect($logsArray)->contains('level', 'warning'),
+                'request_info' => $requestInfo,
+                'steps' => $steps,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Process individual steps for display
+     */
+    private function processStepsForDisplay(array $logsArray): array
+    {
+        return collect($logsArray)->sortBy('created_at')->map(function ($log) {
+            // Determine category and visual indicator
+            $category = $this->determineCategory($log['message']);
+            $visualIndicator = 'L' . ($log['call_depth'] ?? 0);
+            
+            // Calculate step duration
+            $stepDuration = isset($log['properties']['duration_ms']) && is_numeric($log['properties']['duration_ms']) 
+                ? round($log['properties']['duration_ms'], 2) 
+                : null;
+            
+            // Calculate memory used
+            $memoryUsed = isset($log['properties']['memory_used']) && is_numeric($log['properties']['memory_used']) 
+                ? $log['properties']['memory_used'] 
+                : null;
+            
+            // Process data display
+            $dataDisplay = $this->processDataDisplay($log);
+            
+            // Determine step icon class
+            $stepIconClass = $this->determineStepIconClass($log['level']);
+            
+            return [
+                'log' => $this->addMicrosecondPrecision($log),
+                'category' => $category,
+                'visual_indicator' => $visualIndicator,
+                'step_duration' => $stepDuration,
+                'memory_used' => $memoryUsed,
+                'data_display' => $dataDisplay,
+                'step_icon_class' => $stepIconClass,
+                'indent_style' => $this->calculateIndentStyle($log['call_depth'] ?? 0),
+            ];
+        })->values()->toArray();
+    }
+
+    /**
+     * Determine log category based on message
+     */
+    private function determineCategory(string $message): string
+    {
+        if (strpos($message, 'started') !== false || strpos($message, 'completed') !== false) {
+            return 'Function Calls';
+        }
+        if (strpos($message, 'database') !== false || strpos($message, 'query') !== false) {
+            return 'Database';
+        }
+        if (strpos($message, 'api') !== false || strpos($message, 'http') !== false) {
+            return 'API Calls';
+        }
+        if (strpos($message, 'cache') !== false) {
+            return 'Cache';
+        }
+        if (strpos($message, 'config') !== false || strpos($message, 'setting') !== false) {
+            return 'Configuration';
+        }
+        return 'Actions';
+    }
+
+    /**
+     * Process data display for a log entry
+     */
+    private function processDataDisplay(array $log): string
+    {
+        if (!isset($log['properties']) || empty($log['properties'])) {
+            return '';
+        }
+
+        $properties = $log['properties'];
+        $message = $log['message'];
+        
+        // Determine relevant keys based on message type
+        $relevantKeys = collect($properties)->keys();
+        
+        if (strpos($message, 'started') !== false) {
+            $relevantKeys = $relevantKeys->filter(function($key) {
+                return in_array($key, ['headers', 'user_id', 'input_data', 'session_id', 'request_id']);
+            });
+        } elseif (strpos($message, 'completed') !== false) {
+            $relevantKeys = $relevantKeys->filter(function($key) {
+                return in_array($key, ['duration_ms', 'memory_used', 'headers', 'result']);
+            });
+        } else {
+            $relevantKeys = $relevantKeys->filter(function($key) {
+                return !in_array($key, ['duration_ms', 'memory_used']);
+            });
+        }
+
+        if ($relevantKeys->isEmpty()) {
+            return '';
+        }
+
+        return $relevantKeys->map(function($key) use ($properties) {
+            $value = $properties[$key] ?? 'N/A';
+            
+            if (is_array($value)) {
+                $displayValue = '[Array]';
+                $jsonValue = json_encode($value);
+            } elseif (is_string($value) && strlen($value) > 15) {
+                $displayValue = substr($value, 0, 15) . '...';
+                $jsonValue = json_encode($value);
+            } else {
+                $displayValue = $value;
+                $jsonValue = json_encode($value);
+            }
+            
+            $badgeClass = $this->getDataBadgeClass($key);
+            
+            return '<span class="inline-block ' . $badgeClass . ' hover:bg-opacity-80 cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue(\'' . $key . '\', \'' . htmlspecialchars($jsonValue) . '\')" title="Click to view full value">' . $key . ': ' . htmlspecialchars($displayValue) . '</span>';
+        })->join('');
+    }
+
+    /**
+     * Get CSS class for data badge based on key
+     */
+    private function getDataBadgeClass(string $key): string
+    {
+        $classes = [
+            'duration_ms' => 'bg-green-100 text-green-800',
+            'memory_used' => 'bg-purple-100 text-purple-800',
+            'headers' => 'bg-blue-100 text-blue-800',
+            'user_id' => 'bg-gray-100 text-gray-800',
+            'input_data' => 'bg-yellow-100 text-yellow-800',
+            'session_id' => 'bg-indigo-100 text-indigo-800',
+            'request_id' => 'bg-pink-100 text-pink-800',
+            'result' => 'bg-emerald-100 text-emerald-800',
+        ];
+        
+        return $classes[$key] ?? 'bg-gray-100 text-gray-800';
+    }
+
+    /**
+     * Determine step icon class based on level
+     */
+    private function determineStepIconClass(string $level): string
+    {
+        return match($level) {
+            'error' => 'error',
+            'warning' => 'warning',
+            'debug' => 'debug',
+            default => 'info',
+        };
+    }
+
+    /**
+     * Calculate indent style for call depth
+     */
+    private function calculateIndentStyle(int $depth): string
+    {
+        return $depth > 0 ? "margin-left: " . ($depth - 1) . "rem;" : "";
+    }
+
+    /**
+     * Extract request information from main log
+     */
+    private function extractRequestInfo(array $mainLog): array
+    {
+        $properties = $mainLog['properties'] ?? [];
+        $requestInfo = $properties['requestInfo'] ?? [];
+        
+        return [
+            'controller' => $mainLog['controller'] ?? 'Unknown',
+            'method' => $mainLog['method'] ?? 'Unknown',
+            'http_method' => $requestInfo['method'] ?? $mainLog['http_method'] ?? 'UNKNOWN',
+            'url' => $requestInfo['url'] ?? $mainLog['url'] ?? 'Unknown',
+            'ip_address' => $requestInfo['ip'] ?? $mainLog['ip_address'] ?? 'Unknown',
+            'user_agent' => $requestInfo['user_agent'] ?? $mainLog['user_agent'] ?? 'Unknown',
+        ];
+    }
+
+    /**
+     * Add microsecond precision to timestamps
+     */
+    private function addMicrosecondPrecision(array $log): array
+    {
+        if (isset($log['created_at'])) {
+            $carbon = \Carbon\Carbon::parse($log['created_at']);
+            $log['created_at'] = $carbon->format('Y-m-d H:i:s.u');
+            $log['created_at_formatted'] = $carbon->format('g:i:s.u A');
+            $log['created_at_timestamp'] = $carbon->timestamp;
+            $log['created_at_microseconds'] = $carbon->micro;
+        }
+        
+        return $log;
+    }
+
+    /**
      * Get log statistics
      */
-    public function getStatistics(Request $request): JsonResponse
+    public function getStatistics(Request $request): array
     {
         $days = $request->get('days', 7);
         $stats = LogEntry::getStatistics($days);
 
-        return response()->json($stats);
+        // Transform the statistics to match what the view expects
+        return [
+            'total_requests' => $stats['total_logs'] ?? 0,
+            'error_count' => $stats['by_level']['error'] ?? 0,
+            'warning_count' => $stats['by_level']['warning'] ?? 0,
+            'info_count' => $stats['by_level']['info'] ?? 0,
+            'debug_count' => $stats['by_level']['debug'] ?? 0,
+        ];
     }
 
     /**
