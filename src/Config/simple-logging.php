@@ -22,5 +22,5 @@ return [
     ],
     'cleanup_old_logs_days' => env('LOGGING_TRAIT_CLEANUP_DAYS', 5),
     'route_prefix' => env('SIMPLE_LOGGING_ROUTE_PREFIX', 'logs'),
-    'middleware' => env('SIMPLE_LOGGING_MIDDLEWARE', 'api'),
+    'middleware' => env('SIMPLE_LOGGING_MIDDLEWARE', []),
 ];
