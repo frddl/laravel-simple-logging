@@ -19,7 +19,7 @@ class LogViewerController extends Controller
     {
         $levels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
         
-        return view('logs.index', compact('levels'));
+        return view('simple-logging::index', compact('levels'));
     }
 
     /**
