@@ -19,7 +19,7 @@ trait SimpleLoggingTrait
 
         $this->logToDatabase($message, $data, $level);
         
-        if (config('logging_trait.file_logging', false)) {
+        if (config('simple-logging.file_logging', false)) {
             Log::log($level, $message, $data);
         }
     }
@@ -283,6 +283,6 @@ trait SimpleLoggingTrait
      */
     private function isLoggingEnabled()
     {
-        return config('logging_trait.enabled', true);
+        return config('simple-logging.enabled', true);
     }
 }
