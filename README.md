@@ -375,6 +375,9 @@ class OrderController extends Controller
 }
 ```
 
+<img width="1239" height="627" alt="image" src="https://github.com/user-attachments/assets/861220ae-dbc3-476f-b887-52128e8d2a62" />
+
+
 ## Testing
 
 ```bash
