@@ -2,10 +2,10 @@
 
 namespace Frddl\LaravelSimpleLogging\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class LogEntry extends Model
 {
@@ -25,9 +25,6 @@ class LogEntry extends Model
         'user_agent',
         'url',
         'http_method',
-        'status_code',
-        'duration',
-        'memory_usage',
         'created_at',
     ];
 
@@ -157,7 +154,7 @@ class LogEntry extends Model
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get()
-            ->groupBy(function($log) {
+            ->groupBy(function ($log) {
                 return $log->context['type'] ?? 'unknown';
             });
     }
@@ -172,10 +169,10 @@ class LogEntry extends Model
 
         // Count unique traces (request_ids) instead of individual logs
         $totalTraces = $query->select('request_id')->distinct()->count();
-        
+
         // Get trace-level statistics by analyzing the latest log for each request
         $traceStats = $query->select('request_id', 'level', 'message')
-            ->whereIn('id', function($subQuery) use ($query) {
+            ->whereIn('id', function ($subQuery) use ($query) {
                 $subQuery->selectRaw('MAX(id)')
                     ->from('log_entries')
                     ->whereIn('request_id', $query->select('request_id')->distinct())

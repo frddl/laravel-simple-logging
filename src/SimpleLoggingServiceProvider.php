@@ -2,8 +2,8 @@
 
 namespace Frddl\LaravelSimpleLogging;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 
 class SimpleLoggingServiceProvider extends ServiceProvider
 {
@@ -44,7 +44,8 @@ class SimpleLoggingServiceProvider extends ServiceProvider
     {
         // Merge config
         $this->mergeConfigFrom(
-            __DIR__.'/Config/simple-logging.php', 'simple-logging'
+            __DIR__.'/Config/simple-logging.php',
+            'simple-logging'
         );
     }
 
@@ -54,12 +55,12 @@ class SimpleLoggingServiceProvider extends ServiceProvider
     protected function registerRoutes()
     {
         $middleware = config('simple-logging.middleware', []);
-        
+
         // Handle both string and array middleware configurations
         if (is_string($middleware)) {
             $middleware = [$middleware];
         }
-        
+
         Route::group([
             'prefix' => config('simple-logging.route_prefix', 'logs'),
             'middleware' => $middleware,

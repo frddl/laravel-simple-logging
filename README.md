@@ -5,6 +5,11 @@ A simple, elegant logging package for Laravel with automatic method wrapping and
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/frddl/laravel-simple-logging.svg?style=flat-square)](https://packagist.org/packages/frddl/laravel-simple-logging)
 [![Total Downloads](https://img.shields.io/packagist/dt/frddl/laravel-simple-logging.svg?style=flat-square)](https://packagist.org/packages/frddl/laravel-simple-logging)
 [![License](https://img.shields.io/packagist/l/frddl/laravel-simple-logging.svg?style=flat-square)](https://packagist.org/packages/frddl/laravel-simple-logging)
+[![Tests](https://github.com/frddl/laravel-simple-logging/workflows/Tests/badge.svg)](https://github.com/frddl/laravel-simple-logging/actions)
+[![Code Style](https://github.com/frddl/laravel-simple-logging/workflows/Code%20Style/badge.svg)](https://github.com/frddl/laravel-simple-logging/actions)
+[![PHP Version](https://img.shields.io/packagist/php-v/frddl/laravel-simple-logging.svg?style=flat-square)](https://packagist.org/packages/frddl/laravel-simple-logging)
+[![Laravel Version](https://img.shields.io/badge/Laravel-8%2B-red.svg?style=flat-square)](https://laravel.com)
+[![Build Status](https://github.com/frddl/laravel-simple-logging/workflows/Tests/badge.svg)](https://github.com/frddl/laravel-simple-logging/actions)
 
 <img width="1600" height="595" alt="image" src="https://github.com/user-attachments/assets/de8a4798-77f5-4b2b-8003-f51211d7bbb3" />
 
@@ -120,7 +125,7 @@ The `logMethod` function automatically logs:
 ```php
 public function processOrder(Request $request)
 {
-    return $this->logMethod('Process Order', $request->all(), function() use ($request) {
+        return $this->logMethod('Process Order', $request->all(), function() use ($request) {
         $order = Order::create($request->validated());
         
         $this->log('Order created', ['order_id' => $order->id], 'info');

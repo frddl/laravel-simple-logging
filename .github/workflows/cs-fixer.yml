@@ -1,0 +1,55 @@
+name: Code Style
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  cs-fixer:
+    runs-on: ubuntu-latest
+
+    name: Check & fix styling
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.2
+        extensions: mbstring, dom, fileinfo
+
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest
+
+    - name: Install PHP CS Fixer
+      run: composer require --dev friendsofphp/php-cs-fixer --no-update
+
+    - name: Check code style
+      run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+
+    - name: Fix code style (if needed)
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Code style issues found. Fixing..."
+          vendor/bin/php-cs-fixer fix --diff --verbose
+          echo "Code style fixed. Please commit the changes."
+          exit 1
+        else
+          echo "Code style is already correct."
+        fi

@@ -2,13 +2,13 @@
 
 namespace Frddl\LaravelSimpleLogging\Http\Controllers;
 
-use Frddl\LaravelSimpleLogging\Models\LogEntry;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
-use Illuminate\Routing\Controller;
 use Carbon\Carbon;
+use Frddl\LaravelSimpleLogging\Models\LogEntry;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class LogViewerController extends Controller
 {
@@ -18,7 +18,7 @@ class LogViewerController extends Controller
     public function index(Request $request): View
     {
         $levels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
-        
+
         return view('simple-logging::index', compact('levels'));
     }
 
@@ -30,24 +30,24 @@ class LogViewerController extends Controller
         // If only count is requested, return just the count
         if ($request->boolean('count_only')) {
             $query = LogEntry::query();
-            
+
             // Apply basic filters for count
             if ($request->filled('level')) {
                 $query->where('level', $request->level);
             }
-            
+
             if ($request->filled('type')) {
                 $query->whereJsonContains('context->type', $request->type);
             }
-            
+
             if ($request->filled('date_from')) {
                 $query->where('created_at', '>=', $request->date_from);
             }
-            
+
             if ($request->filled('date_to')) {
                 $query->where('created_at', '<=', $request->date_to);
             }
-            
+
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
                     $q->where('message', 'like', '%' . $request->search . '%')
@@ -55,11 +55,11 @@ class LogViewerController extends Controller
                       ->orWhere('properties', 'like', '%' . $request->search . '%');
                 });
             }
-            
+
             $totalLogs = $query->count();
-            
+
             return response()->json([
-                'total_logs' => $totalLogs
+                'total_logs' => $totalLogs,
             ]);
         }
 
@@ -111,7 +111,7 @@ class LogViewerController extends Controller
             $perPage = $request->get('per_page', config('logging_trait.viewer.per_page', 50));
             $page = $request->get('page', 1);
             $offset = ($page - 1) * $perPage;
-            
+
             // Get unique request_ids first, then get all logs for those requests
             $requestIds = $query->select('request_id')
                 ->distinct()
@@ -119,10 +119,10 @@ class LogViewerController extends Controller
                 ->offset($offset)
                 ->limit($perPage)
                 ->pluck('request_id');
-            
+
             // Get total count for pagination (recreate query with same filters)
             $totalQuery = LogEntry::query();
-            
+
             // Apply same filters to total count query
             if ($request->filled('level')) {
                 $totalQuery->where('level', $request->level);
@@ -152,9 +152,9 @@ class LogViewerController extends Controller
             if ($request->filled('property_search')) {
                 $totalQuery->where('properties', 'like', '%' . $request->property_search . '%');
             }
-            
+
             $totalRequests = $totalQuery->select('request_id')->distinct()->get()->count();
-            
+
             // Get all logs for these request_ids
             $logs = LogEntry::whereIn('request_id', $requestIds)
                 ->orderBy('created_at', 'desc')
@@ -165,7 +165,7 @@ class LogViewerController extends Controller
                 })
                 ->values()
                 ->toArray();
-            
+
             return response()->json([
                 'logs' => $logs,
                 'pagination' => [
@@ -175,7 +175,7 @@ class LogViewerController extends Controller
                     'last_page' => ceil($totalRequests / $perPage),
                     'has_more' => $page < ceil($totalRequests / $perPage),
                 ],
-                'statistics' => $this->getStatistics($request)
+                'statistics' => $this->getStatistics($request),
             ]);
         }
 
@@ -194,7 +194,7 @@ class LogViewerController extends Controller
             ],
             'filters' => $request->only([
                 'level', 'type', 'date_from', 'date_to', 'search',
-                'property_key', 'property_value', 'has_property', 'property_search'
+                'property_key', 'property_value', 'has_property', 'property_search',
             ]),
         ]);
     }
@@ -333,7 +333,7 @@ class LogViewerController extends Controller
         $keys = LogEntry::whereNotNull('properties')
             ->get()
             ->pluck('properties')
-            ->map(function($properties) {
+            ->map(function ($properties) {
                 return array_keys($properties);
             })
             ->flatten()
@@ -350,7 +350,7 @@ class LogViewerController extends Controller
     public function getPropertyValues(Request $request): JsonResponse
     {
         $key = $request->get('key');
-        if (!$key) {
+        if (! $key) {
             return response()->json([]);
         }
 
@@ -383,7 +383,7 @@ class LogViewerController extends Controller
     private function exportToCsv($logs)
     {
         $filename = 'logs_' . Carbon::now()->format('Y-m-d_H-i-s') . '.csv';
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
@@ -391,11 +391,11 @@ class LogViewerController extends Controller
 
         $callback = function () use ($logs) {
             $file = fopen('php://output', 'w');
-            
+
             // Headers
             fputcsv($file, [
                 'ID', 'Request ID', 'Level', 'Message', 'Controller', 'Method',
-                'IP Address', 'User Agent', 'URL', 'HTTP Method', 'Status Code', 'Created At'
+                'IP Address', 'User Agent', 'URL', 'HTTP Method', 'Status Code', 'Created At',
             ]);
 
             // Data

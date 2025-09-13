@@ -25,6 +25,7 @@ class LogEntryTest extends TestCase
             'user_agent' => 'Test Agent',
             'url' => 'http://test.com',
             'http_method' => 'GET',
+            'created_at' => now(),
         ]);
 
         $this->assertDatabaseHas('log_entries', [
@@ -51,6 +52,7 @@ class LogEntryTest extends TestCase
             'user_agent',
             'url',
             'http_method',
+            'created_at',
         ];
 
         $this->assertEquals($expectedFillable, $logEntry->getFillable());
