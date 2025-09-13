@@ -48,6 +48,30 @@ trait SimpleLoggingTrait
     }
 
     /**
+     * Get or create a consistent entry method for the entire request
+     * This captures the FIRST method that calls logMethod in a request cycle
+     */
+    private function getEntryMethod()
+    {
+        if (app()->bound('simple-logging.entry-method')) {
+            return app('simple-logging.entry-method');
+        }
+
+        return 'unknown';
+    }
+
+    /**
+     * Set the entry method (only if not already set)
+     * This ensures we capture the FIRST method that calls logMethod
+     */
+    private function setEntryMethod($methodName)
+    {
+        if (! app()->bound('simple-logging.entry-method')) {
+            app()->instance('simple-logging.entry-method', $methodName);
+        }
+    }
+
+    /**
      * Wrap method execution with automatic logging
      * Usage: return $this->logMethod('Method Name', $data, function() { ... });
      */
@@ -58,6 +82,9 @@ trait SimpleLoggingTrait
             $callback = $inputData;
             $inputData = [];
         }
+
+        // Set the entry method if this is the first logMethod call in this request
+        $this->setEntryMethod($methodName);
 
         if (! $this->isLoggingEnabled()) {
             return $callback();
@@ -113,7 +140,7 @@ trait SimpleLoggingTrait
                 'context' => $sanitizedData,
                 'properties' => $sanitizedData, // Store sanitized data as properties
                 'controller' => class_basename($this),
-                'method' => $this->getCallingMethod(),
+                'method' => $this->getEntryMethod(), // Use the first method that called logMethod
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'url' => request()->fullUrl(),
