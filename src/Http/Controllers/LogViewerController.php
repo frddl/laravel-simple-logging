@@ -6,6 +6,7 @@ use Frddl\LaravelSimpleLogging\Models\LogEntry;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Illuminate\Routing\Controller;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
