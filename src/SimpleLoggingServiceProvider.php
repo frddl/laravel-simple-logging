@@ -53,7 +53,7 @@ class SimpleLoggingServiceProvider extends ServiceProvider
      */
     protected function registerRoutes()
     {
-        $middleware = config('simple-logging.middleware', 'api');
+        $middleware = config('simple-logging.middleware', []);
         
         // Handle both string and array middleware configurations
         if (is_string($middleware)) {
