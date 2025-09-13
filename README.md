@@ -9,7 +9,6 @@ A simple, elegant logging package for Laravel with automatic method wrapping and
 [![Code Style](https://github.com/frddl/laravel-simple-logging/workflows/Code%20Style/badge.svg)](https://github.com/frddl/laravel-simple-logging/actions)
 [![PHP Version](https://img.shields.io/packagist/php-v/frddl/laravel-simple-logging.svg?style=flat-square)](https://packagist.org/packages/frddl/laravel-simple-logging)
 [![Laravel Version](https://img.shields.io/badge/Laravel-8%2B-red.svg?style=flat-square)](https://laravel.com)
-[![Build Status](https://github.com/frddl/laravel-simple-logging/workflows/Tests/badge.svg)](https://github.com/frddl/laravel-simple-logging/actions)
 
 <img width="1600" height="595" alt="image" src="https://github.com/user-attachments/assets/de8a4798-77f5-4b2b-8003-f51211d7bbb3" />
 
