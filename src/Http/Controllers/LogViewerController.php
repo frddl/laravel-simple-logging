@@ -157,7 +157,7 @@ class LogViewerController extends Controller
 
             // Get all logs for these request_ids
             $logs = LogEntry::whereIn('request_id', $requestIds)
-                ->orderBy('created_at', 'desc')
+                ->orderBy('created_at', 'asc')
                 ->get()
                 ->groupBy('request_id')
                 ->map(function ($group) {
