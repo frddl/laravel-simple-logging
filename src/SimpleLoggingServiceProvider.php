@@ -53,9 +53,16 @@ class SimpleLoggingServiceProvider extends ServiceProvider
      */
     protected function registerRoutes()
     {
+        $middleware = config('simple-logging.middleware', 'api');
+        
+        // Handle both string and array middleware configurations
+        if (is_string($middleware)) {
+            $middleware = [$middleware];
+        }
+        
         Route::group([
             'prefix' => config('simple-logging.route_prefix', 'logs'),
-            'middleware' => config('simple-logging.middleware', ['web']),
+            'middleware' => $middleware,
         ], function () {
             Route::get('/', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'index'])->name('simple-logging.index');
             Route::get('/api', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'getLogs'])->name('simple-logging.api');
