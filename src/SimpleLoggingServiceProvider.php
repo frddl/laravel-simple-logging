@@ -2,6 +2,7 @@
 
 namespace Frddl\LaravelSimpleLogging;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,6 +36,9 @@ class SimpleLoggingServiceProvider extends ServiceProvider
 
         // Register routes
         $this->registerRoutes();
+
+        // Register scheduled tasks
+        $this->registerScheduledTasks();
     }
 
     /**
@@ -47,6 +51,13 @@ class SimpleLoggingServiceProvider extends ServiceProvider
             __DIR__.'/Config/simple-logging.php',
             'simple-logging'
         );
+
+        // Register console commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Frddl\LaravelSimpleLogging\Console\Commands\CleanupOldLogsCommand::class,
+            ]);
+        }
     }
 
     /**
@@ -70,5 +81,24 @@ class SimpleLoggingServiceProvider extends ServiceProvider
             Route::get('/api/statistics', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'getStatistics'])->name('simple-logging.statistics');
             Route::get('/api/property-keys', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'getPropertyKeys'])->name('simple-logging.property-keys');
         });
+    }
+
+    /**
+     * Register scheduled tasks for automatic cleanup.
+     */
+    protected function registerScheduledTasks()
+    {
+        if ($this->app->runningInConsole()) {
+            $this->app->booted(function () {
+                $schedule = $this->app->make(Schedule::class);
+
+                // Schedule daily cleanup of old logs
+                $schedule->command('simple-logging:cleanup')
+                    ->daily()
+                    ->at('02:00')
+                    ->withoutOverlapping()
+                    ->runInBackground();
+            });
+        }
     }
 }

@@ -1,6 +1,6 @@
 # Laravel Simple Logging
 
-A simple, elegant logging package for Laravel with automatic method wrapping and a beautiful web interface.
+An elegant solution for monitoring your Laravel application's actual flow with comprehensive logging of warnings, infos, debug variables, and performance metrics. Features automatic method wrapping and a beautiful web interface for real-time application monitoring.
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/frddl/laravel-simple-logging.svg?style=flat-square)](https://packagist.org/packages/frddl/laravel-simple-logging)
 [![Total Downloads](https://img.shields.io/packagist/dt/frddl/laravel-simple-logging.svg?style=flat-square)](https://packagist.org/packages/frddl/laravel-simple-logging)
@@ -14,15 +14,31 @@ A simple, elegant logging package for Laravel with automatic method wrapping and
 
 ## Features
 
-- ✅ **Automatic Method Wrapping** - Wrap any method with start/end logging
-- ✅ **Beautiful Web Interface** - Modern, responsive log viewer with filtering
-- ✅ **Request Tracing** - Group all logs by request ID for easy debugging
-- ✅ **Performance Monitoring** - Automatic duration and memory usage tracking
-- ✅ **Error Handling** - Automatic exception logging with stack traces
-- ✅ **Sensitive Data Sanitization** - Automatically masks sensitive information
-- ✅ **Database & File Logging** - Store logs in database and/or files
-- ✅ **Zero Dependencies** - Works with any data structure
-- ✅ **Mobile Responsive** - Beautiful interface on all devices
+- 🎯 **Real-Time Application Flow Monitoring** - Track your app's actual execution flow with comprehensive logging
+- ⚠️ **Smart Warning & Info Logging** - Automatically capture warnings, infos, and debug variables throughout your application
+- 🔍 **Advanced Debug Variable Tracking** - Monitor complex data structures, arrays, objects, and variables in real-time
+- ✅ **Automatic Method Wrapping** - Wrap any method with start/end logging for complete flow visibility
+- 🎨 **Beautiful Web Interface** - Modern, responsive log viewer with advanced filtering and search
+- 🔗 **Request Tracing** - Group all logs by request ID for easy debugging and flow analysis
+- 📊 **Performance Monitoring** - Automatic duration and memory usage tracking for optimization
+- 🚨 **Intelligent Error Handling** - Automatic exception logging with detailed stack traces
+- 🔒 **Sensitive Data Sanitization** - Automatically masks passwords, tokens, and sensitive information
+- 💾 **Flexible Storage** - Store logs in database and/or files with configurable retention
+- 🚀 **Zero Dependencies** - Works with any data structure and Laravel version
+- 📱 **Mobile Responsive** - Beautiful interface on all devices for monitoring on-the-go
+
+## 🎯 Perfect for Application Flow Monitoring
+
+This package is specifically designed for **monitoring your Laravel application's actual execution flow**. It excels at:
+
+- **🔍 Debug Variable Tracking** - Monitor complex data structures, arrays, objects, and variables as they flow through your application
+- **⚠️ Warning & Info Capture** - Automatically log warnings, infos, and debug messages with full context
+- **📊 Real-Time Flow Analysis** - See exactly how your application processes requests, with timing and memory usage
+- **🚨 Exception Tracking** - Capture and analyze errors with complete stack traces and variable states
+- **🔗 Request Tracing** - Follow a single request through your entire application stack
+- **📈 Performance Insights** - Identify bottlenecks and optimize your application based on real usage data
+
+Perfect for debugging complex business logic, monitoring API responses, tracking user interactions, and understanding your application's behavior in production.
 
 ## Installation
 
@@ -70,22 +86,45 @@ public function yourMethod(Request $request)
 }
 ```
 
-### 3. Add custom logging within methods:
+### 3. Add comprehensive monitoring with debug variables:
 
 ```php
-public function yourMethod(Request $request)
+public function processOrder(Request $request)
 {
-    return $this->logMethod('Your Method Name', $request->all(), function() use ($request) {
-        // Custom logging
-        $this->log('Processing user data', ['user_id' => $request->user_id], 'info');
+    return $this->logMethod('Process Order', $request->all(), function() use ($request) {
+        // Monitor input data and validation
+        $this->log('Order validation started', [
+            'order_data' => $request->all(),
+            'user_id' => $request->user_id,
+            'items_count' => count($request->items ?? [])
+        ], 'info');
         
-        // Your business logic
-        $result = $this->doSomething();
+        // Track business logic execution
+        $order = Order::create($request->validated());
+        $this->log('Order created successfully', [
+            'order_id' => $order->id,
+            'total_amount' => $order->total,
+            'payment_method' => $order->payment_method
+        ], 'info');
         
-        // More custom logging
-        $this->log('Operation completed', ['result_count' => count($result)], 'info');
+        // Monitor external API calls
+        $payment = $this->processPayment($order);
+        $this->log('Payment processed', [
+            'payment_id' => $payment->id,
+            'status' => $payment->status,
+            'amount' => $payment->amount
+        ], 'info');
         
-        return response()->json(['data' => $result]);
+        // Track warnings and potential issues
+        if ($payment->amount !== $order->total) {
+            $this->log('Payment amount mismatch detected', [
+                'order_total' => $order->total,
+                'payment_amount' => $payment->amount,
+                'difference' => $payment->amount - $order->total
+            ], 'warning');
+        }
+        
+        return response()->json(['order' => $order]);
     });
 }
 ```
@@ -110,6 +149,42 @@ return [
     ],
     'cleanup_old_logs_days' => env('SIMPLE_LOGGING_CLEANUP_DAYS', 30),
 ];
+```
+
+## Log Cleanup & Maintenance
+
+The package includes automatic log cleanup to prevent database bloat:
+
+### Automatic Cleanup
+- **Scheduled Daily** - Runs automatically at 2:00 AM daily
+- **Configurable Retention** - Keep logs for specified days (default: 30 days)
+- **Background Processing** - Runs without blocking your application
+
+### Manual Cleanup
+```bash
+# Clean up logs older than 30 days (uses config default)
+php artisan simple-logging:cleanup
+
+# Clean up logs older than 7 days
+php artisan simple-logging:cleanup --days=7
+
+# Clean up logs older than 90 days
+php artisan simple-logging:cleanup --days=90
+```
+
+### Configuration
+```php
+// In config/simple-logging.php
+'cleanup_old_logs_days' => env('SIMPLE_LOGGING_CLEANUP_DAYS', 30),
+
+// In your .env file
+SIMPLE_LOGGING_CLEANUP_DAYS=30
+```
+
+### Disable Cleanup
+Set the cleanup days to `null` or `0` to disable automatic cleanup:
+```php
+'cleanup_old_logs_days' => null, // Disable cleanup
 ```
 
 ## Usage
@@ -139,23 +214,54 @@ public function processOrder(Request $request)
 }
 ```
 
-### Direct Logging
+### Direct Logging for Application Flow Monitoring
 
-For custom logging within methods:
+Monitor your application's execution flow with detailed logging:
 
 ```php
-// Simple log
-$this->log('User logged in', ['user_id' => $user->id]);
-
-// Log with specific level
-$this->log('Payment failed', ['error' => $exception->getMessage()], 'error');
-
-// Log with complex data
-$this->log('Order processed', [
-    'order_id' => $order->id,
-    'items' => $order->items->pluck('name'),
-    'total' => $order->total
+// Monitor user actions and debug variables
+$this->log('User authentication started', [
+    'email' => $request->email,
+    'ip_address' => $request->ip(),
+    'user_agent' => $request->userAgent(),
+    'session_id' => session()->getId()
 ], 'info');
+
+// Track business logic with complex data structures
+$this->log('Order processing initiated', [
+    'order_id' => $order->id,
+    'customer_data' => $order->customer->toArray(),
+    'items' => $order->items->map(function($item) {
+        return [
+            'name' => $item->name,
+            'price' => $item->price,
+            'quantity' => $item->quantity
+        ];
+    }),
+    'total_calculation' => [
+        'subtotal' => $order->subtotal,
+        'tax' => $order->tax,
+        'shipping' => $order->shipping,
+        'total' => $order->total
+    ]
+], 'info');
+
+// Monitor warnings and potential issues
+$this->log('Low inventory warning', [
+    'product_id' => $product->id,
+    'current_stock' => $product->stock,
+    'requested_quantity' => $quantity,
+    'threshold' => $product->low_stock_threshold
+], 'warning');
+
+// Track errors with full context
+$this->log('Payment processing failed', [
+    'error' => $exception->getMessage(),
+    'order_id' => $order->id,
+    'payment_data' => $paymentData,
+    'retry_count' => $retryCount,
+    'stack_trace' => $exception->getTraceAsString()
+], 'error');
 ```
 
 ### Log Levels

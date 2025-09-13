@@ -17,8 +17,17 @@ trait SimpleLoggingTrait
             return;
         }
 
-        $this->logToDatabase($message, $data, $level);
+        // Check if the log level meets the minimum threshold
+        if (! $this->shouldLogLevel($level)) {
+            return;
+        }
 
+        // Log to database if enabled
+        if (config('simple-logging.database_logging', true)) {
+            $this->logToDatabase($message, $data, $level);
+        }
+
+        // Log to file if enabled
         if (config('simple-logging.file_logging', false)) {
             Log::log($level, $message, $data);
         }
@@ -295,5 +304,29 @@ trait SimpleLoggingTrait
     private function isLoggingEnabled()
     {
         return config('simple-logging.enabled', true);
+    }
+
+    /**
+     * Check if the log level meets the minimum threshold
+     */
+    private function shouldLogLevel($level)
+    {
+        $minLevel = config('simple-logging.log_level', 'info');
+
+        $levels = [
+            'debug' => 0,
+            'info' => 1,
+            'notice' => 2,
+            'warning' => 3,
+            'error' => 4,
+            'critical' => 5,
+            'alert' => 6,
+            'emergency' => 7,
+        ];
+
+        $currentLevel = $levels[$level] ?? 1;
+        $minLevelValue = $levels[$minLevel] ?? 1;
+
+        return $currentLevel >= $minLevelValue;
     }
 }

@@ -108,7 +108,7 @@ class LogViewerController extends Controller
 
         // Check if grouping by request_id is requested
         if ($request->boolean('group_by_request')) {
-            $perPage = $request->get('per_page', config('logging_trait.viewer.per_page', 50));
+            $perPage = $request->get('per_page', config('simple-logging.viewer.per_page', 50));
             $page = $request->get('page', 1);
             $offset = ($page - 1) * $perPage;
 
@@ -181,7 +181,7 @@ class LogViewerController extends Controller
 
         // Order and paginate
         $logs = $query->orderBy('created_at', 'desc')
-            ->paginate(config('logging_trait.viewer.per_page', 50));
+            ->paginate(config('simple-logging.viewer.per_page', 50));
 
         return response()->json([
             'logs' => $logs->items(),
@@ -279,7 +279,7 @@ class LogViewerController extends Controller
         }
 
         $format = $request->get('format', 'json');
-        $limit = min($request->get('limit', 1000), config('logging_trait.export.max_records', 5000));
+        $limit = min($request->get('limit', 1000), config('simple-logging.export.max_records', 5000));
 
         $logs = $query->orderBy('created_at', 'desc')
             ->limit($limit)
@@ -300,7 +300,7 @@ class LogViewerController extends Controller
      */
     public function clearOldLogs(Request $request): JsonResponse
     {
-        $days = $request->get('days', config('logging_trait.cleanup_old_logs_days', 30));
+        $days = $request->get('days', config('simple-logging.cleanup_old_logs_days', 30));
         $deleted = LogEntry::where('created_at', '<', Carbon::now()->subDays($days))->delete();
 
         return response()->json([
