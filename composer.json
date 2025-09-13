@@ -1,7 +1,6 @@
 {
     "name": "frddl/laravel-simple-logging",
     "description": "A simple, elegant logging package for Laravel with automatic method wrapping and beautiful web interface",
-    "version": "1.1.3",
     "keywords": ["laravel", "logging", "debugging", "monitoring", "tracing"],
     "license": "MIT",
     "authors": [
