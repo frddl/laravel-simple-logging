@@ -59,6 +59,49 @@ trait SimpleLoggingTrait
     }
 
     /**
+     * Convenience methods for different log levels
+     */
+    protected function logInfo($message, $data = [])
+    {
+        $this->log($message, $data, 'info', 'action');
+    }
+
+    protected function logWarning($message, $data = [])
+    {
+        $this->log($message, $data, 'warning', 'action');
+    }
+
+    protected function logError($message, $data = [])
+    {
+        $this->log($message, $data, 'error', 'action');
+    }
+
+    protected function logDebug($message, $data = [])
+    {
+        $this->log($message, $data, 'debug', 'action');
+    }
+
+    protected function logSuccess($message, $data = [])
+    {
+        $this->log($message, $data, 'success', 'action');
+    }
+
+    protected function logCritical($message, $data = [])
+    {
+        $this->log($message, $data, 'critical', 'action');
+    }
+
+    protected function logAlert($message, $data = [])
+    {
+        $this->log($message, $data, 'alert', 'action');
+    }
+
+    protected function logEmergency($message, $data = [])
+    {
+        $this->log($message, $data, 'emergency', 'action');
+    }
+
+    /**
      * Get or create a consistent request ID for the entire request
      */
     private function getRequestId()
@@ -298,8 +341,13 @@ trait SimpleLoggingTrait
             // Handle Laravel Response objects
             if (method_exists($result, 'getData')) {
                 $data = $result->getData(true);
+                $responseData = is_array($data) ? $data : ['data' => $data];
 
-                return is_array($data) ? $data : ['data' => $data];
+                // Add HTTP response metadata
+                $responseData['status_code'] = method_exists($result, 'getStatusCode') ? $result->getStatusCode() : null;
+                $responseData['content_type'] = method_exists($result, 'headers') ? $result->headers->get('Content-Type') : null;
+
+                return $responseData;
             }
 
             // Handle JSON responses
@@ -307,10 +355,16 @@ trait SimpleLoggingTrait
                 $content = $result->getContent();
                 $decoded = json_decode($content, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    return $decoded;
+                    $responseData = $decoded;
+                } else {
+                    $responseData = ['content' => $content];
                 }
 
-                return ['content' => $content];
+                // Add HTTP response metadata
+                $responseData['status_code'] = method_exists($result, 'getStatusCode') ? $result->getStatusCode() : null;
+                $responseData['content_type'] = method_exists($result, 'headers') ? $result->headers->get('Content-Type') : null;
+
+                return $responseData;
             }
 
             // Convert object to array

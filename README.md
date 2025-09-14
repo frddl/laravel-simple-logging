@@ -378,7 +378,76 @@ class OrderController extends Controller
 <img width="1239" height="627" alt="image" src="https://github.com/user-attachments/assets/861220ae-dbc3-476f-b887-52128e8d2a62" />
 
 
-## Testing
+## 🧪 Comprehensive Testing
+
+The package includes built-in comprehensive testing functionality to validate all logging features:
+
+### Quick Test
+```bash
+# Run basic logging tests
+php artisan simple-logging:test --quick
+```
+
+### Comprehensive Test
+```bash
+# Run extensive tests covering all features
+php artisan simple-logging:test --comprehensive
+```
+
+The comprehensive test covers:
+- **All Log Levels**: info, warning, error, debug, success, critical, alert, emergency
+- **Complex Data Structures**: Nested objects, arrays, mixed data types
+- **Data Type Permutations**: All possible combinations of strings, numbers, booleans, arrays, objects, nulls
+- **Real-World Scenarios**: E-commerce, monitoring, security, API responses
+- **Edge Cases**: Special characters, unicode, boundary values, empty data
+- **Nested Function Calls**: Call depth tracking and stack management
+- **Performance Metrics**: Memory usage, execution time, database queries
+
+### Clean Test Logs
+```bash
+# Run comprehensive test and clean up afterward
+php artisan simple-logging:test --comprehensive --clean
+```
+
+### Test Features Demonstrated
+
+The comprehensive test generates **26+ log entries** covering:
+
+#### **Log Levels & Categories**
+- Information, Warning, Error, Debug, Success, Critical, Alert, Emergency
+- Authentication, Database, API, Security, Performance, Data Test
+
+#### **Complex Data Structures**
+- User profiles with nested personal info, preferences, and activity
+- System metrics with performance, database, and cache data
+- Business logic with orders, inventory, and revenue tracking
+- API responses with external and internal service monitoring
+- Error tracking with recent errors and error rates
+- Security events with failed logins and suspicious activity
+
+#### **Data Type Permutations**
+- Mixed arrays with strings, integers, floats, booleans, nulls
+- Nested objects up to 4 levels deep
+- Complex combinations of arrays and objects
+- Edge cases with special characters, unicode, and boundary values
+
+#### **Real-World Examples**
+- E-commerce order processing with payment and inventory
+- System monitoring with performance metrics and health checks
+- Security monitoring with failed logins and threat detection
+- API integration with external services and response tracking
+
+### View Test Results
+
+After running tests, view the results in the web interface:
+```bash
+# Access the log viewer
+http://your-app.com/logs
+```
+
+The test logs will be grouped by request ID, showing the complete flow of the comprehensive test with all data structures, log levels, and nested function calls.
+
+## Unit Testing
 
 ```bash
 composer test

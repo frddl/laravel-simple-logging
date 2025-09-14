@@ -348,7 +348,7 @@
                 padding: 12px 16px;
             }
             .log-content {
-                padding: 0 16px 16px 16px;
+                padding: 16px;
             }
             .step-item {
                 padding: 8px 12px;
@@ -953,7 +953,6 @@
             // Ensure all cards start collapsed
             container.querySelectorAll('.log-content').forEach(content => {
                 content.classList.remove('show');
-                console.log('Collapsing content:', content.id, 'has show class:', content.classList.contains('show'));
             });
         }
 
@@ -1005,25 +1004,20 @@
 
         // Load detailed log data from API
         async function loadLogDetails(requestId, contentElement) {
-            console.log('Loading details for request:', requestId);
-            console.log('Content element:', contentElement);
-            console.log('Content element ID:', contentElement.id);
-            
             try {
                 const response = await fetch(`/ac/logs/api/details?request_id=${requestId}`);
-                console.log('API response status:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const html = await response.text();
-                console.log('Received HTML length:', html.length);
-                console.log('HTML content preview:', html.substring(0, 500));
                 
-                // Replace the entire content element with the full detailed view
+                // Replace the entire content element with the rendered view
                 contentElement.innerHTML = html;
-                console.log('Full detailed content inserted');
+                
+                // Hide all tab contents in this card but the first (steps tab)
+                hideAllTabsExceptFirst(contentElement);
                 
                 // Mark as loaded
                 contentElement.dataset.loaded = 'true';
@@ -1039,42 +1033,51 @@
             }
         }
 
-        // Tab switching
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('tab-button') || e.target.closest('.tab-button')) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const tabButton = e.target.classList.contains('tab-button') ? e.target : e.target.closest('.tab-button');
-                const tabId = tabButton.getAttribute('data-tab');
-                const requestId = tabId.split('-')[1];
-                
-                
-                // Find the parent card container
-                const cardContainer = tabButton.closest('.log-card');
-                if (!cardContainer) {
-                    console.error('Could not find card container');
-                    return;
-                }
-                
-                // Remove active class from all tabs in this card only
-                const allTabs = cardContainer.querySelectorAll('.tab-button');
-                allTabs.forEach(tab => tab.classList.remove('active'));
-                
-                // Hide all tab content in this card only
-                const allContent = cardContainer.querySelectorAll('.tab-content');
-                allContent.forEach(content => content.classList.remove('active'));
-                
-                // Activate clicked tab
-                tabButton.classList.add('active');
-                const targetContent = cardContainer.querySelector(`#${tabId}`);
-                if (targetContent) {
-                    targetContent.classList.add('active');
-                } else {
-                    console.error('Could not find content for tab:', tabId, 'Available content:', cardContainer.querySelectorAll('.tab-content'));
-                }
+        // Global switchTab function for server-rendered content
+        function switchTab(tabName) {
+            // Find the closest log card container
+            const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
+            if (!tabButton) {
+                console.error('Tab button not found:', tabName);
+                return;
             }
-        });
+            
+            const cardContainer = tabButton.closest('.log-card');
+            if (!cardContainer) {
+                console.error('Card container not found for tab:', tabName);
+                return;
+            }
+            
+            // Hide all tab contents in this card
+            const allContent = cardContainer.querySelectorAll('.tab-content');
+            allContent.forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons in this card
+            const allTabs = cardContainer.querySelectorAll('.tab-button');
+            allTabs.forEach(tab => {
+                tab.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected tab content
+            const targetContent = cardContainer.querySelector(`#${tabName}-tab`);
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+                targetContent.classList.add('active');
+            } else {
+                console.error('Could not find content for tab:', tabName, 'Available content:', cardContainer.querySelectorAll('.tab-content'));
+            }
+            
+            // Add active class to selected tab button
+            tabButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+            tabButton.classList.remove('border-transparent', 'text-gray-500');
+        }
+
+        // Tab switching - disabled in favor of global switchTab function
+        // The global switchTab function handles all tab switching for server-rendered content
 
         // Display pagination
         function displayPagination(pagination) {

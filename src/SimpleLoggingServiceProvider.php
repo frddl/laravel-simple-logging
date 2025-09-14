@@ -56,6 +56,7 @@ class SimpleLoggingServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \Frddl\LaravelSimpleLogging\Console\Commands\CleanupOldLogsCommand::class,
+                \Frddl\LaravelSimpleLogging\Console\Commands\TestLoggingCommand::class,
             ]);
         }
     }
