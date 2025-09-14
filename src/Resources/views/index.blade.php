@@ -821,7 +821,7 @@
                 group_by_request: true
             };
             
-            fetch('/ac/logs/api?' + new URLSearchParams(filters))
+            fetch('{{ route("simple-logging.api") }}?' + new URLSearchParams(filters))
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1015,7 +1015,7 @@
         // Load detailed log data from API
         async function loadLogDetails(requestId, contentElement) {
             try {
-                const response = await fetch(`/ac/logs/api/details?request_id=${requestId}`);
+                const response = await fetch(`{{ route("simple-logging.details") }}?request_id=${requestId}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
