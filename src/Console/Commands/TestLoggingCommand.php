@@ -716,6 +716,7 @@ class TestLoggingCommand extends Command
             'message' => 'This is a nested function call at level 1',
             'category' => 'Nested Calls',
             'data' => ['call_level' => 1, 'function' => 'nestedFunctionCall1'],
+            'input_params' => ['depth' => 1, 'parent_id' => null],
         ], function () {
             return $this->nestedFunctionCall2();
         });
@@ -754,7 +755,11 @@ class TestLoggingCommand extends Command
     private function testHttpResponses()
     {
         // Test 200 OK response
-        $this->logMethod('Test 200 OK Response', [], function () {
+        $this->logMethod('Test 200 OK Response', [
+            'user_id' => 123,
+            'action' => 'get_data',
+            'parameters' => ['id' => 1, 'include' => 'details'],
+        ], function () {
             return response()->json([
                 'message' => 'Success',
                 'data' => ['id' => 1, 'name' => 'Test Item'],
@@ -762,7 +767,10 @@ class TestLoggingCommand extends Command
         });
 
         // Test 400 Bad Request response
-        $this->logMethod('Test 400 Bad Request Response', [], function () {
+        $this->logMethod('Test 400 Bad Request Response', [
+            'invalid_data' => 'test',
+            'missing_required' => null,
+        ], function () {
             return response()->json([
                 'error' => 'Bad Request',
                 'message' => 'Invalid parameters provided',
@@ -770,7 +778,10 @@ class TestLoggingCommand extends Command
         });
 
         // Test 404 Not Found response
-        $this->logMethod('Test 404 Not Found Response', [], function () {
+        $this->logMethod('Test 404 Not Found Response', [
+            'requested_id' => 999,
+            'resource_type' => 'user',
+        ], function () {
             return response()->json([
                 'error' => 'Not Found',
                 'message' => 'Resource not found',
@@ -778,7 +789,10 @@ class TestLoggingCommand extends Command
         });
 
         // Test 500 Internal Server Error response
-        $this->logMethod('Test 500 Internal Server Error Response', [], function () {
+        $this->logMethod('Test 500 Internal Server Error Response', [
+            'operation' => 'database_query',
+            'query_params' => ['table' => 'users', 'where' => 'id = 1'],
+        ], function () {
             return response()->json([
                 'error' => 'Internal Server Error',
                 'message' => 'Something went wrong',
@@ -786,7 +800,10 @@ class TestLoggingCommand extends Command
         });
 
         // Test HTML response
-        $this->logMethod('Test HTML Response', [], function () {
+        $this->logMethod('Test HTML Response', [
+            'template' => 'welcome',
+            'variables' => ['title' => 'Hello World'],
+        ], function () {
             return response('<h1>Hello World</h1>', 200)
                 ->header('Content-Type', 'text/html');
         });

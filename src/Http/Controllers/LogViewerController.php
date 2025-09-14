@@ -642,6 +642,24 @@ class LogViewerController extends Controller
                     return $value !== null && $value !== 'N/A' && $value !== '';
                 }
 
+                // Only show input_data if it's not empty
+                if ($key === 'input_data') {
+                    $value = $log['properties'][$key] ?? null;
+
+                    // Check if value is meaningful (not null, not empty string, not empty array)
+                    if ($value === null || $value === 'N/A' || $value === '') {
+                        return false;
+                    }
+
+                    // If it's an array, check if it has any elements
+                    if (is_array($value)) {
+                        return count($value) > 0;
+                    }
+
+                    // For other types, check if not empty
+                    return ! empty($value);
+                }
+
                 return in_array($key, ['headers', 'user_id', 'input_data', 'session_id', 'request_id']);
             });
         } elseif (strpos($message, 'completed') !== false) {

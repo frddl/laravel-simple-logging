@@ -218,12 +218,22 @@ trait SimpleLoggingTrait
             // Get request info safely
             $requestInfo = $this->getEnhancedRequestInfo();
 
+            // Merge data, but prioritize sanitizedData over requestInfo for input_data
+            $mergedData = array_merge($requestInfo, $sanitizedData);
+
+            // If we have actual input data in sanitizedData, use it instead of request input_data
+            if (! empty($sanitizedData) && ! empty(array_filter($sanitizedData, function ($value) {
+                return ! is_array($value) || ! empty($value);
+            }))) {
+                $mergedData['input_data'] = $sanitizedData;
+            }
+
             LogEntry::create([
                 'request_id' => $this->getRequestId(),
                 'level' => $level,
                 'message' => $message,
-                'context' => array_merge($sanitizedData, $requestInfo),
-                'properties' => array_merge($sanitizedData, $requestInfo), // Store sanitized data as properties
+                'context' => $mergedData,
+                'properties' => $mergedData, // Store merged data as properties
                 'controller' => class_basename($this),
                 'method' => $this->getEntryMethod(), // Use the first method that called logMethod
                 'call_depth' => $this->getCallDepth(),
