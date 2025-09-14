@@ -21,6 +21,7 @@ class LogEntry extends Model
         'properties',
         'controller',
         'method',
+        'call_depth',
         'ip_address',
         'user_agent',
         'url',
