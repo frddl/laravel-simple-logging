@@ -78,6 +78,7 @@ class SimpleLoggingServiceProvider extends ServiceProvider
         ], function () {
             Route::get('/', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'index'])->name('simple-logging.index');
             Route::get('/api', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'getLogs'])->name('simple-logging.api');
+            Route::get('/api/details', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'getLogDetails'])->name('simple-logging.details');
             Route::get('/api/statistics', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'getStatistics'])->name('simple-logging.statistics');
             Route::get('/api/property-keys', [\Frddl\LaravelSimpleLogging\Http\Controllers\LogViewerController::class, 'getPropertyKeys'])->name('simple-logging.property-keys');
         });

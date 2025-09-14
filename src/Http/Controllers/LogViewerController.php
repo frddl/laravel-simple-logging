@@ -151,6 +151,33 @@ class LogViewerController extends Controller
     }
 
     /**
+     * Get detailed log data for a specific request ID
+     */
+    public function getLogDetails(Request $request): JsonResponse
+    {
+        $requestId = $request->get('request_id');
+        
+        if (!$requestId) {
+            return response()->json(['error' => 'Request ID is required'], 400);
+        }
+
+        // Get all logs for this request ID
+        $logs = LogEntry::where('request_id', $requestId)
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->toArray();
+
+        if (empty($logs)) {
+            return response()->json(['error' => 'No logs found for this request ID'], 404);
+        }
+
+        // Process the logs for detailed display
+        $processedData = $this->processDetailedLogData($logs);
+
+        return response()->json($processedData);
+    }
+
+    /**
      * Get logs with filters
      */
     public function getLogs(Request $request): JsonResponse
@@ -864,5 +891,84 @@ class LogViewerController extends Controller
         // This would require the maatwebsite/excel package
         // For now, fallback to CSV
         return $this->exportToCsv($logs);
+    }
+
+    /**
+     * Process detailed log data for a specific request
+     */
+    private function processDetailedLogData(array $logs): array
+    {
+        $requestId = $logs[0]['request_id'];
+        
+        // Find main log (started) and completed log
+        $mainLog = collect($logs)->first(function($log) {
+            return strpos($log['message'], 'started') !== false;
+        }) ?? $logs[0];
+        
+        // Find the completed log that matches the main method
+        $mainMethodName = '';
+        if ($mainLog && strpos($mainLog['message'], 'started') !== false) {
+            $mainMethodName = str_replace(' started', '', $mainLog['message']);
+        }
+        
+        $completedLog = collect($logs)->first(function($log) use ($mainMethodName) {
+            return strpos($log['message'], 'completed') !== false && 
+                   strpos($log['message'], $mainMethodName) !== false;
+        });
+        
+        $errorLog = collect($logs)->first(function($log) {
+            return strpos($log['message'], 'failed') !== false;
+        });
+        
+        // Calculate status
+        $status = $errorLog ? 'error' : ($completedLog ? 'success' : 'info');
+        
+        // Calculate total duration from step durations
+        $totalDuration = 0;
+        foreach ($logs as $log) {
+            if (isset($log['properties']['duration_ms']) && is_numeric($log['properties']['duration_ms'])) {
+                $totalDuration += $log['properties']['duration_ms'];
+            }
+        }
+        $duration = $totalDuration > 0 ? round($totalDuration, 2) . 'ms' : '-';
+        
+        // Process steps for display
+        $steps = $this->processStepsForDisplay($logs);
+        
+        // Extract request info
+        $requestInfo = $this->extractRequestInfo($mainLog);
+        
+        // Get response data
+        $responseData = $this->extractResponseData($completedLog);
+        
+        return [
+            'request_id' => $requestId,
+            'main_log' => $this->addMicrosecondPrecision($mainLog),
+            'status' => $status,
+            'duration' => $duration,
+            'step_count' => count($logs),
+            'has_errors' => collect($logs)->contains('level', 'error'),
+            'has_warnings' => collect($logs)->contains('level', 'warning'),
+            'request_info' => $requestInfo,
+            'steps' => $steps,
+            'response_data' => $responseData,
+        ];
+    }
+
+    /**
+     * Extract response data from completed log
+     */
+    private function extractResponseData($completedLog): array
+    {
+        if (!$completedLog) {
+            return [];
+        }
+
+        return [
+            'status_code' => $completedLog['properties']['status_code'] ?? 'N/A',
+            'memory_used' => $completedLog['properties']['memory_used'] ?? 'N/A',
+            'content_type' => $completedLog['properties']['content_type'] ?? 'N/A',
+            'data' => $completedLog['properties']['response_data'] ?? [],
+        ];
     }
 }

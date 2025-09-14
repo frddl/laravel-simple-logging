@@ -530,6 +530,7 @@
                     <div id="logs-container" class="space-y-3 lg:space-y-4">
                         @if(isset($groupedLogs['logs']) && count($groupedLogs['logs']) > 0)
                             @foreach($groupedLogs['logs'] as $logsArray)
+                                @if(empty($logsArray) || !isset($logsArray[0]) || !isset($logsArray[0]['request_id'])) @continue @endif
                                 @php
                                     $requestId = $logsArray[0]['request_id'];
                                     $mainLog = collect($logsArray)->first(function($log) {
@@ -1012,225 +1013,9 @@
                         </div>
                     </div>
                     <div class="log-content" id="content-${requestId}">
-                        <div class="space-y-3">
-                            <!-- Summary Info -->
-                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                    <div>
-                                        <span class="text-gray-600 font-medium">Controller:</span>
-                                        <div class="text-gray-900 font-mono">${controllerName}</div>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-600 font-medium">Method:</span>
-                                        <div class="text-gray-900 font-mono">${methodName}</div>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-600 font-medium">Duration:</span>
-                                        <div class="text-gray-900 font-mono">${duration}ms</div>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-600 font-medium">Steps:</span>
-                                        <div class="text-gray-900 font-mono">${stepCount}</div>
-                                    </div>
-                                </div>
-                                <div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span class="text-gray-600 font-medium">HTTP Method:</span>
-                                        <span class="http-method http-${httpMethod.toLowerCase()} ml-2">${httpMethod}</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-600 font-medium">IP Address:</span>
-                                        <span class="text-gray-900 font-mono ml-2">${ipAddress}</span>
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <span class="text-gray-600 font-medium">URL:</span>
-                                        <span class="text-gray-900 font-mono ml-2 break-all">${requestUrl}</span>
-                                    </div>
-                                </div>
-                                <div class="mt-3 pt-3 border-t border-gray-200">
-                                    <span class="text-gray-600 font-medium">Trace ID:</span>
-                                    <span class="text-gray-900 font-mono text-sm">${requestId}</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Tabs -->
-                            <div class="border-b border-gray-200 pb-2">
-                                <nav class="flex space-x-1">
-                                    <button class="tab-button active" data-tab="steps-${requestId}">
-                                        <i class="fas fa-list mr-1"></i>Steps
-                                    </button>
-                                    <button class="tab-button" data-tab="request-${requestId}">
-                                        <i class="fas fa-arrow-right mr-1"></i>Request
-                                    </button>
-                                    <button class="tab-button" data-tab="response-${requestId}">
-                                        <i class="fas fa-arrow-left mr-1"></i>Response
-                                    </button>
-                                    <button class="tab-button" data-tab="headers-${requestId}">
-                                        <i class="fas fa-headers mr-1"></i>Headers
-                                    </button>
-                                </nav>
-                            </div>
-
-                            <!-- Tab Content -->
-                            <div class="tab-content" id="steps-${requestId}">
-                                <div class="space-y-2">
-                                    ${logsArray
-                                        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-                                        .map((log, index) => {
-                                            const stepDuration = log.properties?.duration_ms ? `${log.properties.duration_ms}ms` : '';
-                                            const memoryUsed = log.properties?.memory_used ? `${Math.round(log.properties.memory_used / 1024)}KB` : '';
-                                            const hasData = log.properties && Object.keys(log.properties).length > 0;
-                                            
-                                            // Get call depth from database
-                                            const depth = log.call_depth || 0;
-                                            
-                                            // Get visual indicators and categories from properties
-                                            const logType = log.properties?.log_type || 'action';
-                                            const visualIndicator = `L${depth}`; // Show level instead of emoji
-                                            const category = log.properties?.category || 'Actions';
-                                            
-                                            // Create indentation based on depth (first step starts at left)
-                                            const indentClass = depth <= 1 ? 'ml-0' : `ml-${Math.min((depth - 1) * 4, 16)}`;
-                                            const indentStyle = depth <= 1 ? 'margin-left: 0;' : `margin-left: ${(depth - 1) * 1}rem;`;
-                                            
-                                            // Determine step icon class based on level
-                                            let stepIconClass = 'info';
-                                            if (log.level === 'error' || log.message.includes('failed')) {
-                                                stepIconClass = 'error';
-                                            } else if (log.level === 'warning') {
-                                                stepIconClass = 'warning';
-                                            } else if (log.message.includes('completed')) {
-                                                stepIconClass = 'success';
-                                            } else if (log.level === 'debug') {
-                                                stepIconClass = 'debug';
-                                            }
-                                            
-                                            return `
-                                        <div class="step-item" style="${indentStyle}">
-                                            <div class="flex items-start space-x-3">
-                                                <div class="step-icon ${stepIconClass} flex-shrink-0">
-                                                    ${visualIndicator}
-                                            </div>
-                                            <div class="flex-1 min-w-0">
-                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                                        <div class="flex items-center flex-wrap gap-2">
-                                                    <p class="font-medium text-gray-900 text-sm break-words">${log.message}</p>
-                                                            <span class="category-badge category-${category.toLowerCase().replace(/\s+/g, '-')}">${category}</span>
-                                                            ${depth > 0 ? `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Level ${depth}</span>` : ''}
-                                                        </div>
-                                                    <div class="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
-                                                        ${stepDuration ? `<span class="font-mono">${stepDuration}</span>` : ''}
-                                                        ${memoryUsed ? `<span class="font-mono">${memoryUsed}</span>` : ''}
-                                                        <span class="text-gray-400">${new Date(log.created_at).toLocaleTimeString()}</span>
-                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getLevelClass(log.level)}">
-                                                            ${log.level}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                ${hasData ? `
-                                                    <div class="mt-1 text-xs text-gray-600">
-                                                        <span class="font-medium">Data:</span> 
-                                                        ${(() => {
-                                                            const relevantKeys = Object.keys(log.properties)
-                                                                .filter(key => !['duration_ms', 'memory_used', 'log_type', 'visual_indicator', 'category', 'request_info'].includes(key));
-                                                            
-                                                            // Show specific data based on log type
-                                                            if (log.message.includes('started')) {
-                                                                return relevantKeys.slice(0, 2).map(key => 
-                                                                    `<span class="inline-block bg-blue-100 px-1 rounded mr-1">${key}</span>`
-                                                                ).join('') + (relevantKeys.length > 2 ? `<span class="text-gray-400">+${relevantKeys.length - 2} more</span>` : '');
-                                                            } else if (log.message.includes('completed')) {
-                                                                const completionKeys = ['duration_ms', 'memory_used'].filter(key => log.properties[key]);
-                                                                const otherKeys = relevantKeys.slice(0, 1);
-                                                                return [...completionKeys, ...otherKeys].slice(0, 3).map(key => 
-                                                                    `<span class="inline-block bg-green-100 px-1 rounded mr-1">${key}</span>`
-                                                                ).join('') + (([...completionKeys, ...otherKeys].length > 3) ? `<span class="text-gray-400">+${[...completionKeys, ...otherKeys].length - 3} more</span>` : '');
-                                                            } else {
-                                                                return relevantKeys.slice(0, 3).map(key => 
-                                                                    `<span class="inline-block bg-gray-100 px-1 rounded mr-1">${key}</span>`
-                                                                ).join('') + (relevantKeys.length > 3 ? `<span class="text-gray-400">+${relevantKeys.length - 3} more</span>` : '');
-                                                            }
-                                                        })()}
-                                                    </div>
-                                                ` : ''}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    `;
-                                        }).join('')}
-                                </div>
-                            </div>
-
-                            <div class="tab-content" id="request-${requestId}">
-                                <div class="space-y-4">
-                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                        <h4 class="font-semibold text-blue-900 mb-2">Request Information</h4>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                                <span class="text-blue-700 font-medium">Method:</span>
-                                                <span class="http-method http-${httpMethod.toLowerCase()} ml-2">${httpMethod}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-blue-700 font-medium">URL:</span>
-                                                <span class="text-blue-900 font-mono ml-2 break-all">${requestUrl}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-blue-700 font-medium">IP Address:</span>
-                                                <span class="text-blue-900 font-mono ml-2">${ipAddress}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-blue-700 font-medium">User Agent:</span>
-                                                <span class="text-blue-900 ml-2 break-all">${userAgent}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                        <h4 class="font-semibold text-gray-900 mb-2">Request Data</h4>
-                                <div class="json-viewer">
-                                    <pre>${JSON.stringify(mainLog.properties.request_data || {}, null, 2)}</pre>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="tab-content" id="response-${requestId}">
-                                <div class="json-viewer">
-                                    <pre>${JSON.stringify(completedLog?.properties.response_data || {}, null, 2)}</pre>
-                                </div>
-                            </div>
-
-                            <div class="tab-content" id="headers-${requestId}">
-                                <div class="space-y-4">
-                                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                                        <h4 class="font-semibold text-green-900 mb-2">Request Headers</h4>
-                                        <div class="json-viewer">
-                                            <pre>${JSON.stringify(requestInfo.request_info?.headers || requestInfo.headers || {}, null, 2)}</pre>
-                                        </div>
-                                    </div>
-                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                        <h4 class="font-semibold text-yellow-900 mb-2">Additional Request Info</h4>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                                <span class="text-yellow-700 font-medium">Route Name:</span>
-                                                <span class="text-yellow-900 ml-2">${requestInfo.request_info?.route_name || requestInfo.route_name || 'N/A'}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-yellow-700 font-medium">Route Action:</span>
-                                                <span class="text-yellow-900 ml-2">${requestInfo.request_info?.route_action || requestInfo.route_action || 'N/A'}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-yellow-700 font-medium">Session ID:</span>
-                                                <span class="text-yellow-900 font-mono ml-2">${requestInfo.session_id || 'N/A'}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-yellow-700 font-medium">User ID:</span>
-                                                <span class="text-yellow-900 ml-2">${requestInfo.user_id || 'N/A'}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <p>Loading detailed information...</p>
                         </div>
                     </div>
                 `;
@@ -1270,6 +1055,12 @@
                 content.classList.remove('show');
                 chevron.classList.remove('fa-chevron-up');
                 chevron.classList.add('fa-chevron-down');
+            }
+            
+            if (expandedRows.has(requestId)) {
+                content.classList.remove('show');
+                chevron.classList.remove('fa-chevron-up');
+                chevron.classList.add('fa-chevron-down');
                 chevron.style.transform = 'rotate(0deg)';
                 expandedRows.delete(requestId);
             } else {
@@ -1294,19 +1085,239 @@
                 chevron.style.transform = 'rotate(180deg)';
                 expandedRows.add(requestId);
                 
-                // Activate the first tab (Steps) when expanding
-                const firstTab = content.querySelector('.tab-content');
-                const firstTabButton = content.querySelector('.tab-button');
-                if (firstTab && firstTabButton) {
-                    // Remove active from all tabs in this card
-                    content.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-                    content.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                    
-                    // Activate first tab
-                    firstTab.classList.add('active');
-                    firstTabButton.classList.add('active');
+                // Load detailed data if not already loaded
+                if (!content.dataset.loaded) {
+                    loadLogDetails(requestId, content);
                 }
             }
+        }
+
+        // Load detailed log data from API
+        async function loadLogDetails(requestId, contentElement) {
+            try {
+                const response = await fetch(`/ac/logs/api/details?request_id=${requestId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Render the detailed content
+                renderDetailedContent(contentElement, data);
+                
+                // Mark as loaded
+                contentElement.dataset.loaded = 'true';
+                
+            } catch (error) {
+                console.error('Error loading log details:', error);
+                contentElement.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error loading details: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render detailed content from API data
+        function renderDetailedContent(contentElement, data) {
+            const { steps, request_info, response_data, main_log, duration } = data;
+            
+            contentElement.innerHTML = `
+                <div class="space-y-3">
+                    <!-- Summary Info -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600 font-medium">Controller:</span>
+                                <div class="text-gray-900 font-mono">${main_log.controller || 'Unknown'}</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-600 font-medium">Method:</span>
+                                <div class="text-gray-900 font-mono">${main_log.method || 'Unknown'}</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-600 font-medium">Duration:</span>
+                                <div class="text-gray-900 font-mono">${duration}</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-600 font-medium">Steps:</span>
+                                <div class="text-gray-900 font-mono">${steps.length}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600 font-medium">HTTP Method:</span>
+                                <span class="http-method http-${(request_info.method || 'get').toLowerCase()} ml-2">${request_info.method || 'GET'}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600 font-medium">IP Address:</span>
+                                <span class="text-gray-900 font-mono ml-2">${request_info.ip_address || 'Unknown'}</span>
+                            </div>
+                            <div class="md:col-span-2">
+                                <span class="text-gray-600 font-medium">URL:</span>
+                                <span class="text-gray-900 font-mono ml-2 break-all">${request_info.url || 'Unknown'}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <span class="text-gray-600 font-medium">Trace ID:</span>
+                            <span class="text-gray-900 font-mono text-sm">${data.request_id}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabs -->
+                    <div class="border-b border-gray-200 pb-2">
+                        <nav class="flex space-x-1">
+                            <button class="tab-button active" data-tab="steps-${data.request_id}">
+                                <i class="fas fa-list mr-1"></i>Steps
+                            </button>
+                            <button class="tab-button" data-tab="request-${data.request_id}">
+                                <i class="fas fa-arrow-right mr-1"></i>Request
+                            </button>
+                            <button class="tab-button" data-tab="response-${data.request_id}">
+                                <i class="fas fa-arrow-left mr-1"></i>Response
+                            </button>
+                            <button class="tab-button" data-tab="headers-${data.request_id}">
+                                <i class="fas fa-headers mr-1"></i>Headers
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content active" id="steps-${data.request_id}">
+                        <div class="space-y-2">
+                            ${steps.map(step => `
+                                <div class="step-item" style="${step.indent_style}">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="step-icon ${step.step_icon_class} flex-shrink-0">
+                                            ${step.visual_indicator}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <div class="flex items-center flex-wrap gap-2">
+                                                    <p class="font-medium text-gray-900 text-sm break-words">${step.log.message}</p>
+                                                    <span class="category-badge category-${step.category.toLowerCase().replace(/\s+/g, '-')}">${step.category}</span>
+                                                    ${step.log.call_depth > 0 ? `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Level ${step.log.call_depth}</span>` : ''}
+                                                </div>
+                                                <div class="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
+                                                    ${step.step_duration ? `<span class="font-mono">${step.step_duration}ms</span>` : ''}
+                                                    ${step.memory_used ? `<span class="font-mono">${Math.round(step.memory_used / 1024)}KB</span>` : ''}
+                                                    <span class="text-gray-400">${new Date(step.log.created_at).toLocaleTimeString()}</span>
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getLevelClass(step.log.level)}">
+                                                        ${step.log.level}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            ${step.data_display ? `
+                                                <div class="mt-1 text-xs text-gray-600">
+                                                    ${step.data_display}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="request-${data.request_id}">
+                        <div class="space-y-4">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 class="font-semibold text-blue-900 mb-2">Request Information</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                        <span class="text-blue-700 font-medium">Method:</span>
+                                        <span class="http-method http-${(request_info.method || 'get').toLowerCase()} ml-2">${request_info.method || 'GET'}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-blue-700 font-medium">URL:</span>
+                                        <span class="text-blue-900 font-mono ml-2 break-all">${request_info.url || 'Unknown'}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-blue-700 font-medium">IP Address:</span>
+                                        <span class="text-blue-900 font-mono ml-2">${request_info.ip_address || 'Unknown'}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-blue-700 font-medium">User Agent:</span>
+                                        <span class="text-blue-900 font-mono ml-2 break-all">${request_info.user_agent || 'Unknown'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${request_info.headers ? `
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">Headers</h4>
+                                    <div class="json-viewer">
+                                        <pre>${JSON.stringify(request_info.headers, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="response-${data.request_id}">
+                        ${response_data && Object.keys(response_data).length > 0 ? `
+                            <div class="space-y-4">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-green-900 mb-2">Response Information</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <span class="text-green-700 font-medium">Status Code:</span>
+                                            <span class="text-green-900 font-mono ml-2">${response_data.status_code || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-green-700 font-medium">Memory Used:</span>
+                                            <span class="text-green-900 font-mono ml-2">${response_data.memory_used || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-green-700 font-medium">Content Type:</span>
+                                            <span class="text-green-900 font-mono ml-2">${response_data.content_type || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-green-700 font-medium">Duration:</span>
+                                            <span class="text-green-900 font-mono ml-2">${duration}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                ${response_data.data && Object.keys(response_data.data).length > 0 ? `
+                                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-900 mb-2">Response Data</h4>
+                                        <div class="json-viewer">
+                                            <pre>${JSON.stringify(response_data.data, null, 2)}</pre>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : `
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                                <p>No response data available</p>
+                            </div>
+                        `}
+                    </div>
+
+                    <div class="tab-content" id="headers-${data.request_id}">
+                        <div class="space-y-4">
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <h4 class="font-semibold text-purple-900 mb-2">Request Headers</h4>
+                                <div class="json-viewer">
+                                    <pre>${JSON.stringify(request_info.headers || {}, null, 2)}</pre>
+                                </div>
+                            </div>
+                            
+                            ${response_data?.response_headers ? `
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-purple-900 mb-2">Response Headers</h4>
+                                    <div class="json-viewer">
+                                        <pre>${JSON.stringify(response_data.response_headers, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         // Tab switching
