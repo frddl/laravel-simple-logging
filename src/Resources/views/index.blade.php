@@ -1216,7 +1216,9 @@
                                                         const chipClass = key.includes('error') || key.includes('exception') ? 'bg-red-100 hover:bg-red-200' : 
                                                                         key.includes('success') || key.includes('completed') ? 'bg-green-100 hover:bg-green-200' : 
                                                                         'bg-blue-100 hover:bg-blue-200';
-                                                        return `<span class="inline-block ${chipClass} cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue('${key}', '${JSON.stringify(value).replace(/'/g, "\\'")}')" title="Click to view full value">${key}: ${displayValue}</span>`;
+                                                        const level = step.log.call_depth || 1;
+                                                        const method = step.log.message || 'Unknown';
+                                                        return `<span class="inline-block ${chipClass} cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue('${key}', '${JSON.stringify(value).replace(/'/g, "\\'")}', 'L${level}', '${method.replace(/'/g, "\\'")}')" title="Click to view full value">${key}: ${displayValue}</span>`;
                                                     }).join('')}
                                                 </div>
                                             ` : ''}
@@ -1543,13 +1545,16 @@
         });
 
         // Show data value in beautiful modal
-        function showDataValue(key, value) {
+        function showDataValue(key, value, level = '', method = '') {
             try {
                 const parsedValue = JSON.parse(value);
-                const formattedValue = typeof parsedValue === 'object' ? JSON.stringify(parsedValue, null, 2) : parsedValue;
-                showDataModal(`${key}`, parsedValue, `Data value for: ${key}`);
+                const title = level && method ? `${level} ${method} - ${key}` : key;
+                const subtitle = level && method ? `From: ${level} ${method}` : `Data value for: ${key}`;
+                showDataModal(title, parsedValue, subtitle);
             } catch (e) {
-                showDataModal(`${key}`, value, `Data value for: ${key}`);
+                const title = level && method ? `${level} ${method} - ${key}` : key;
+                const subtitle = level && method ? `From: ${level} ${method}` : `Data value for: ${key}`;
+                showDataModal(title, value, subtitle);
             }
         }
 
