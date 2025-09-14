@@ -1208,6 +1208,18 @@
                                                     ${step.data_display}
                                                 </div>
                                             ` : ''}
+                                            ${step.log.properties && Object.keys(step.log.properties).length > 0 ? `
+                                                <div class="mt-2 flex flex-wrap gap-1">
+                                                    ${Object.entries(step.log.properties).map(([key, value]) => {
+                                                        if (key === 'duration_ms' || key === 'memory_used' || key === 'call_depth' || key === 'log_type' || key === 'category' || key === 'visual_indicator') return '';
+                                                        const displayValue = typeof value === 'string' && value.length > 15 ? value.substring(0, 15) + '...' : value;
+                                                        const chipClass = key.includes('error') || key.includes('exception') ? 'bg-red-100 hover:bg-red-200' : 
+                                                                        key.includes('success') || key.includes('completed') ? 'bg-green-100 hover:bg-green-200' : 
+                                                                        'bg-blue-100 hover:bg-blue-200';
+                                                        return `<span class="inline-block ${chipClass} cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue('${key}', '${JSON.stringify(value).replace(/'/g, "\\'")}')" title="Click to view full value">${key}: ${displayValue}</span>`;
+                                                    }).join('')}
+                                                </div>
+                                            ` : ''}
                                         </div>
                                     </div>
                                 </div>
