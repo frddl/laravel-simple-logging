@@ -1042,9 +1042,11 @@
 
         // Global switchTab function for server-rendered content
         function switchTab(tabName, cardContainer = null) {
+            let tabButton;
+            
             // If no card container provided, find it from the tab button
             if (!cardContainer) {
-                const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
+                tabButton = document.querySelector(`[data-tab="${tabName}"]`);
                 if (!tabButton) {
                     console.error('Tab button not found:', tabName);
                     return;
@@ -1052,6 +1054,13 @@
                 cardContainer = tabButton.closest('.log-card');
                 if (!cardContainer) {
                     console.error('Card container not found for tab:', tabName);
+                    return;
+                }
+            } else {
+                // Find the tab button within the provided card container
+                tabButton = cardContainer.querySelector(`[data-tab="${tabName}"]`);
+                if (!tabButton) {
+                    console.error('Tab button not found in card container:', tabName);
                     return;
                 }
             }
