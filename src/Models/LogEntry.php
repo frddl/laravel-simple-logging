@@ -189,7 +189,8 @@ class LogEntry extends Model
             'by_level' => $traceStats,
             'by_type' => $query->selectRaw('JSON_EXTRACT(context, "$.type") as type, COUNT(DISTINCT request_id) as count')
                 ->whereNotNull('context')
-                ->groupBy('type')
+                ->whereNotNull(DB::raw('JSON_EXTRACT(context, "$.type")'))
+                ->groupBy(DB::raw('JSON_EXTRACT(context, "$.type")'))
                 ->pluck('count', 'type'),
             'by_hour' => $query->selectRaw('HOUR(created_at) as hour, COUNT(DISTINCT request_id) as count')
                 ->groupBy('hour')
