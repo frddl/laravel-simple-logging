@@ -939,13 +939,23 @@
                 container.appendChild(card);
             });
             
-            // Add event delegation for card clicks
+            // Add event delegation for card clicks and tab clicks
             container.addEventListener('click', function(e) {
                 const logHeader = e.target.closest('.log-header');
                 if (logHeader) {
                     const requestId = logHeader.getAttribute('data-request-id');
                     if (requestId) {
                         toggleCard(requestId);
+                    }
+                }
+                
+                // Handle tab button clicks
+                const tabButton = e.target.closest('.tab-button');
+                if (tabButton) {
+                    const tabName = tabButton.getAttribute('data-tab');
+                    const cardContainer = tabButton.closest('.log-card');
+                    if (tabName && cardContainer) {
+                        switchTab(tabName, cardContainer);
                     }
                 }
             });
@@ -1016,9 +1026,6 @@
                 // Replace the entire content element with the rendered view
                 contentElement.innerHTML = html;
                 
-                // Hide all tab contents in this card but the first (steps tab)
-                hideAllTabsExceptFirst(contentElement);
-                
                 // Mark as loaded
                 contentElement.dataset.loaded = 'true';
                 
@@ -1034,18 +1041,19 @@
         }
 
         // Global switchTab function for server-rendered content
-        function switchTab(tabName) {
-            // Find the closest log card container
-            const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
-            if (!tabButton) {
-                console.error('Tab button not found:', tabName);
-                return;
-            }
-            
-            const cardContainer = tabButton.closest('.log-card');
+        function switchTab(tabName, cardContainer = null) {
+            // If no card container provided, find it from the tab button
             if (!cardContainer) {
-                console.error('Card container not found for tab:', tabName);
-                return;
+                const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
+                if (!tabButton) {
+                    console.error('Tab button not found:', tabName);
+                    return;
+                }
+                cardContainer = tabButton.closest('.log-card');
+                if (!cardContainer) {
+                    console.error('Card container not found for tab:', tabName);
+                    return;
+                }
             }
             
             // Hide all tab contents in this card
