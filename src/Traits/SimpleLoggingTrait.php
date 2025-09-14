@@ -41,6 +41,24 @@ trait SimpleLoggingTrait
     }
 
     /**
+     * Log method start - call this at the beginning of a method
+     */
+    protected function logMethodStart($methodName, $data = [])
+    {
+        $this->pushCallStack();
+        $this->log($methodName . ' started', $data, 'info', 'action');
+    }
+
+    /**
+     * Log method end - call this at the end of a method
+     */
+    protected function logMethodEnd($methodName, $data = [])
+    {
+        $this->log($methodName . ' completed', $data, 'info', 'action');
+        $this->popCallStack();
+    }
+
+    /**
      * Get or create a consistent request ID for the entire request
      */
     private function getRequestId()
@@ -97,6 +115,9 @@ trait SimpleLoggingTrait
             return $callback();
         }
 
+        // Push to call stack at the start
+        $this->pushCallStack();
+        
         $startTime = microtime(true);
         $startMemory = memory_get_usage(true);
 
@@ -114,6 +135,9 @@ trait SimpleLoggingTrait
                 'response_data' => $this->extractResponseData($result),
             ] + $inputData, 'info');
 
+            // Pop from call stack at the end
+            $this->popCallStack();
+            
             return $result;
 
         } catch (\Exception $e) {
@@ -127,6 +151,9 @@ trait SimpleLoggingTrait
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ] + $inputData, 'error');
+
+            // Pop from call stack even on error
+            $this->popCallStack();
 
             throw $e; // Re-throw the exception
         }
@@ -151,6 +178,7 @@ trait SimpleLoggingTrait
                 'properties' => array_merge($sanitizedData, $requestInfo), // Store sanitized data as properties
                 'controller' => class_basename($this),
                 'method' => $this->getEntryMethod(), // Use the first method that called logMethod
+                'call_depth' => $this->getCallDepth(),
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'url' => request()->fullUrl(),
@@ -557,5 +585,77 @@ trait SimpleLoggingTrait
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Get the call stacks (shared static variable)
+     */
+    private function &getCallStacks()
+    {
+        static $callStacks = [];
+        return $callStacks;
+    }
+
+    /**
+     * Calculate the call depth based on a stack-based approach
+     */
+    private function getCallDepth()
+    {
+        $callStacks = &$this->getCallStacks();
+        $requestId = $this->getRequestId();
+        
+        // Initialize call stack for this request
+        if (!isset($callStacks[$requestId])) {
+            $callStacks[$requestId] = [];
+        }
+        
+        // Get the current call stack depth
+        $currentDepth = count($callStacks[$requestId]);
+        
+        
+        // Clean up old request stacks (keep only last 10 requests)
+        if (count($callStacks) > 10) {
+            $callStacks = array_slice($callStacks, -10, null, true);
+        }
+        
+        return max(1, $currentDepth);
+    }
+
+    /**
+     * Push a new call onto the stack (call this at the start of a method)
+     */
+    private function pushCallStack()
+    {
+        $callStacks = &$this->getCallStacks();
+        $requestId = $this->getRequestId();
+        
+        // Initialize call stack for this request
+        if (!isset($callStacks[$requestId])) {
+            $callStacks[$requestId] = [];
+        }
+        
+        // Push current timestamp and method info onto stack
+        $callStacks[$requestId][] = [
+            'timestamp' => microtime(true),
+            'method' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)[1]['function'] ?? 'unknown'
+        ];
+        
+        // Clean up old request stacks
+        if (count($callStacks) > 10) {
+            $callStacks = array_slice($callStacks, -10, null, true);
+        }
+    }
+
+    /**
+     * Pop a call from the stack (call this at the end of a method)
+     */
+    private function popCallStack()
+    {
+        $callStacks = &$this->getCallStacks();
+        $requestId = $this->getRequestId();
+        
+        if (isset($callStacks[$requestId]) && !empty($callStacks[$requestId])) {
+            array_pop($callStacks[$requestId]);
+        }
     }
 }

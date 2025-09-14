@@ -153,28 +153,411 @@ class LogViewerController extends Controller
     /**
      * Get detailed log data for a specific request ID
      */
-    public function getLogDetails(Request $request): JsonResponse
+    public function getLogDetails(Request $request)
     {
-        $requestId = $request->get('request_id');
-        
-        if (!$requestId) {
-            return response()->json(['error' => 'Request ID is required'], 400);
+        try {
+            $requestId = $request->get('request_id');
+            
+            if (!$requestId) {
+                return response()->json(['error' => 'Request ID is required'], 400);
+            }
+
+            // Get all logs for this request ID
+            $logs = LogEntry::where('request_id', $requestId)
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->toArray();
+
+            if (empty($logs)) {
+                return response()->json(['error' => 'No logs found for this request ID'], 404);
+            }
+
+            // Process the logs for detailed display
+            $processedData = $this->processDetailedLogData($logs);
+
+            // Debug: Log the processed data
+            \Log::info('Processed data for request ' . $requestId, [
+                'steps_count' => count($processedData['steps'] ?? []),
+                'has_steps' => !empty($processedData['steps']),
+                'steps' => $processedData['steps'] ?? []
+            ]);
+
+            // Return the full detailed content with all tabs
+            $stepsHtml = '';
+            if (!empty($processedData['steps'])) {
+                foreach ($processedData['steps'] as $step) {
+                    $stepsHtml .= '<div class="step-item" style="' . ($step['indent_style'] ?? '') . '">
+                        <div class="flex items-start space-x-3">
+                            <div class="step-icon ' . ($step['step_icon_class'] ?? 'info') . ' flex-shrink-0">
+                                ' . ($step['visual_indicator'] ?? 'L1') . '
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div class="flex items-center flex-wrap gap-2">
+                                        <p class="font-medium text-gray-900 text-sm break-words">' . ($step['log']['message'] ?? 'Unknown') . '</p>
+                                        <span class="category-badge category-' . strtolower(str_replace(' ', '-', $step['category'] ?? 'Actions')) . '">' . ($step['category'] ?? 'Actions') . '</span>
+                                        ' . (($step['log']['call_depth'] ?? 0) > 0 ? '<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Level ' . $step['log']['call_depth'] . '</span>' : '') . '
+                                    </div>
+                                    <div class="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
+                                        ' . (($step['step_duration'] ?? '') ? '<span class="font-mono">' . $step['step_duration'] . 'ms</span>' : '') . '
+                                        <span class="text-gray-400">' . \Carbon\Carbon::parse($step['log']['created_at'] ?? now())->format('H:i:s') . '</span>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            ' . ($step['log']['level'] ?? 'info') . '
+                                        </span>
+                                    </div>
+                                </div>
+                                ' . (($step['data_display'] ?? '') ? '<div class="mt-1 text-xs text-gray-600">' . $step['data_display'] . '</div>' : '') . '
+                            </div>
+                        </div>
+                    </div>';
+                }
+            }
+            
+            // Generate Request tab content
+            $requestInfo = $processedData['request_info'] ?? [];
+            $requestHtml = '<div class="space-y-6">
+                <!-- Request Information Card -->
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-arrow-right text-blue-600 text-lg"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-lg font-semibold text-gray-900">Request Information</h3>
+                                <p class="text-sm text-gray-600">HTTP request details and metadata</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <i class="fas fa-globe mr-2 text-blue-500"></i>
+                                        Network Details
+                                    </h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">HTTP Method</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">' . ($requestInfo['http_method'] ?? 'Unknown') . '</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">IP Address</span>
+                                            <span class="font-mono text-sm text-gray-900">' . ($requestInfo['ip_address'] ?? 'Unknown') . '</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <i class="fas fa-code mr-2 text-purple-500"></i>
+                                        Controller Details
+                                    </h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">Controller</span>
+                                            <span class="font-mono text-sm text-gray-900">' . ($requestInfo['controller'] ?? 'Unknown') . '</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">Method</span>
+                                            <span class="font-mono text-sm text-gray-900">' . ($requestInfo['method'] ?? 'Unknown') . '</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <i class="fas fa-link mr-2 text-indigo-500"></i>
+                                        URL Details
+                                    </h4>
+                                    <div class="space-y-2">
+                                        <div>
+                                            <span class="text-sm text-gray-600 block mb-1">Full URL</span>
+                                            <div class="bg-white border border-gray-200 rounded p-2">
+                                                <code class="text-xs text-gray-800 break-all">' . ($requestInfo['url'] ?? 'Unknown') . '</code>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <i class="fas fa-user-agent mr-2 text-orange-500"></i>
+                                        User Agent
+                                    </h4>
+                                    <div class="bg-white border border-gray-200 rounded p-2">
+                                        <code class="text-xs text-gray-800 break-all">' . ($requestInfo['user_agent'] ?? 'Unknown') . '</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>';
+
+            // Generate Response tab content
+            $responseData = $processedData['response_data'] ?? [];
+            $responseHtml = '<div class="space-y-6">
+                <!-- Response Information Card -->
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-3 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-arrow-left text-green-600 text-lg"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-lg font-semibold text-gray-900">Response Information</h3>
+                                <p class="text-sm text-gray-600">Server response details and data</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                                        Status Details
+                                    </h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">Status Code</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">' . ($responseData['status_code'] ?? 'N/A') . '</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">Content Type</span>
+                                            <span class="font-mono text-sm text-gray-900">' . ($responseData['content_type'] ?? 'N/A') . '</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <i class="fas fa-memory mr-2 text-purple-500"></i>
+                                        Performance
+                                    </h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">Memory Used</span>
+                                            <span class="font-mono text-sm text-gray-900">' . ($responseData['memory_used'] ?? 'N/A') . '</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <i class="fas fa-database mr-2 text-blue-500"></i>
+                                        Response Data
+                                    </h4>
+                                    <div class="bg-gray-900 rounded-lg p-4 overflow-auto max-h-64">
+                                        <pre class="text-green-400 text-sm font-mono whitespace-pre-wrap break-words">' . json_encode($responseData['data'] ?? [], JSON_PRETTY_PRINT) . '</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>';
+
+            // Generate Headers tab content
+            $headersData = $processedData['request_info']['headers'] ?? [];
+            $headersHtml = '<div class="space-y-6">
+                <!-- Headers Information Card -->
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-3 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-headers text-purple-600 text-lg"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-lg font-semibold text-gray-900">Request Headers</h3>
+                                <p class="text-sm text-gray-600">HTTP headers sent with the request</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                <i class="fas fa-list mr-2 text-purple-500"></i>
+                                Header Details
+                            </h4>
+                            <div class="bg-gray-900 rounded-lg p-4 overflow-auto max-h-64">
+                                <pre class="text-green-400 text-sm font-mono whitespace-pre-wrap break-words">' . json_encode($headersData, JSON_PRETTY_PRINT) . '</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>';
+
+            return response('<div class="space-y-3">
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600 font-medium">Controller:</span>
+                            <div class="text-gray-900 font-mono">' . ($processedData['main_log']['controller'] ?? 'Unknown') . '</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 font-medium">Method:</span>
+                            <div class="text-gray-900 font-mono">' . ($processedData['main_log']['method'] ?? 'Unknown') . '</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 font-medium">Duration:</span>
+                            <div class="text-gray-900 font-mono">' . ($processedData['duration'] ?? 'Unknown') . '</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 font-medium">Steps:</span>
+                            <div class="text-gray-900 font-mono">' . count($processedData['steps'] ?? []) . '</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-b border-gray-200 pb-2">
+                    <nav class="flex space-x-1">
+                        <button class="tab-button active" data-tab="steps-' . $requestId . '">
+                            <i class="fas fa-list mr-1"></i>Steps
+                        </button>
+                        <button class="tab-button" data-tab="request-' . $requestId . '">
+                            <i class="fas fa-arrow-right mr-1"></i>Request
+                        </button>
+                        <button class="tab-button" data-tab="response-' . $requestId . '">
+                            <i class="fas fa-arrow-left mr-1"></i>Response
+                        </button>
+                        <button class="tab-button" data-tab="headers-' . $requestId . '">
+                            <i class="fas fa-headers mr-1"></i>Headers
+                        </button>
+                    </nav>
+                </div>
+                <div class="tab-content active" id="steps-' . $requestId . '">
+                    <div class="space-y-2">
+                        ' . ($stepsHtml ?: '<div class="text-center py-4 text-gray-500">No steps available</div>') . '
+                    </div>
+                </div>
+                <div class="tab-content" id="request-' . $requestId . '">
+                    ' . $requestHtml . '
+                </div>
+                <div class="tab-content" id="response-' . $requestId . '">
+                    ' . $responseHtml . '
+                </div>
+                <div class="tab-content" id="headers-' . $requestId . '">
+                    ' . $headersHtml . '
+                </div>
+            </div>
+            <script>
+                // Tab switching for this specific request
+                document.addEventListener("DOMContentLoaded", function() {
+                    const requestId = "' . $requestId . '";
+                    const cardContainer = document.querySelector(\'[data-request-id="\' + requestId + \'"]\');
+                    if (cardContainer) {
+                        cardContainer.addEventListener("click", function(e) {
+                            if (e.target.classList.contains("tab-button") || e.target.closest(".tab-button")) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                const tabButton = e.target.classList.contains("tab-button") ? e.target : e.target.closest(".tab-button");
+                                const tabId = tabButton.getAttribute("data-tab");
+                                
+                                // Remove active class from all tabs in this card only
+                                const allTabs = cardContainer.querySelectorAll(".tab-button");
+                                allTabs.forEach(tab => tab.classList.remove("active"));
+                                
+                                // Hide all tab content in this card only
+                                const allContent = cardContainer.querySelectorAll(".tab-content");
+                                allContent.forEach(content => content.classList.remove("active"));
+                                
+                                // Activate clicked tab
+                                tabButton.classList.add("active");
+                                const targetContent = cardContainer.querySelector("#" + tabId);
+                                if (targetContent) {
+                                    targetContent.classList.add("active");
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                // Data modal functions
+                function showDataValue(key, value, level = "", method = "") {
+                    try {
+                        const parsedValue = JSON.parse(value);
+                        const title = key === "headers" ? `View <span style="color: #3b82f6;">${key}</span>` : `View <span style="color: #3b82f6;">${key}</span>`;
+                        const subtitle = level && method ? `From: ${level} ${method}` : `Data value for: ${key}`;
+                        showDataModal(title, parsedValue, subtitle);
+                    } catch (e) {
+                        const title = key === "headers" ? `View <span style="color: #3b82f6;">${key}</span>` : `View <span style="color: #3b82f6;">${key}</span>`;
+                        const subtitle = level && method ? `From: ${level} ${method}` : `Data value for: ${key}`;
+                        showDataModal(title, value, subtitle);
+                    }
+                }
+                
+                function showDataModal(title, data, message) {
+                    // Create modal if it doesn\'t exist
+                    let modal = document.getElementById("data-modal");
+                    if (!modal) {
+                        modal = document.createElement("div");
+                        modal.id = "data-modal";
+                        modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden";
+                        modal.innerHTML = `
+                            <div class="bg-white rounded-lg shadow-xl max-w-4xl max-h-[80vh] w-full mx-4">
+                                <div class="flex items-center justify-between p-4 border-b border-gray-200 pb-2">
+                                    <h3 class="text-lg font-semibold text-gray-900" id="modal-title">Data Viewer</h3>
+                                    <button onclick="closeDataModal()" class="text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                                <div class="p-4">
+                                    <div class="mb-3">
+                                        <span class="text-sm text-gray-600">From:</span>
+                                        <span class="text-sm font-medium text-gray-900" id="modal-message"></span>
+                                    </div>
+                                    <div class="bg-gray-900 rounded-lg p-4 overflow-auto max-h-96">
+                                        <pre class="text-green-400 text-sm font-mono" id="modal-content"></pre>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end p-4 border-t border-gray-200">
+                                    <button onclick="closeDataModal()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                    }
+                    
+                    // Update modal content
+                    document.getElementById("modal-title").innerHTML = title;
+                    document.getElementById("modal-message").textContent = message;
+                    document.getElementById("modal-content").textContent = JSON.stringify(data, null, 2);
+                    
+                    // Show modal
+                    modal.classList.remove("hidden");
+                }
+                
+                function closeDataModal() {
+                    const modal = document.getElementById("data-modal");
+                    if (modal) {
+                        modal.classList.add("hidden");
+                    }
+                }
+                
+                // Close modal when clicking outside
+                document.addEventListener("click", (e) => {
+                    const modal = document.getElementById("data-modal");
+                    if (e.target === modal) {
+                        closeDataModal();
+                    }
+                });
+            </script>', 200, ['Content-Type' => 'text/html']);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in getLogDetails: ' . $e->getMessage(), [
+                'request_id' => $request->get('request_id'),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Internal server error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Get all logs for this request ID
-        $logs = LogEntry::where('request_id', $requestId)
-            ->orderBy('created_at', 'asc')
-            ->get()
-            ->toArray();
-
-        if (empty($logs)) {
-            return response()->json(['error' => 'No logs found for this request ID'], 404);
-        }
-
-        // Process the logs for detailed display
-        $processedData = $this->processDetailedLogData($logs);
-
-        return response()->json($processedData);
     }
 
     /**
@@ -185,24 +568,24 @@ class LogViewerController extends Controller
         // If only count is requested, return just the count
         if ($request->boolean('count_only')) {
             $query = LogEntry::query();
-
+            
             // Apply basic filters for count
             if ($request->filled('level')) {
                 $query->where('level', $request->level);
             }
-
+            
             if ($request->filled('type')) {
                 $query->whereJsonContains('context->type', $request->type);
             }
-
+            
             if ($request->filled('date_from')) {
                 $query->where('created_at', '>=', $request->date_from);
             }
-
+            
             if ($request->filled('date_to')) {
                 $query->where('created_at', '<=', $request->date_to);
             }
-
+            
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
                     $q->where('message', 'like', '%' . $request->search . '%')
@@ -210,9 +593,9 @@ class LogViewerController extends Controller
                       ->orWhere('properties', 'like', '%' . $request->search . '%');
                 });
             }
-
+            
             $totalLogs = $query->count();
-
+            
             return response()->json([
                 'total_logs' => $totalLogs,
             ]);
@@ -272,7 +655,7 @@ class LogViewerController extends Controller
             $perPage = $request->get('per_page', config('simple-logging.viewer.per_page', 50));
             $page = $request->get('page', 1);
             $offset = ($page - 1) * $perPage;
-
+            
             // Get unique request_ids ordered by their latest log timestamp
             // Create a fresh query to avoid conflicts with existing ordering
             $requestQuery = LogEntry::query();
@@ -321,10 +704,10 @@ class LogViewerController extends Controller
                 ->limit($perPage)
                 ->pluck('request_id')
                 ->toArray();
-
+            
             // Get total count for pagination (recreate query with same filters)
             $totalQuery = LogEntry::query();
-
+            
             // Apply same filters to total count query
             if ($request->filled('level')) {
                 $totalQuery->where('level', $request->level);
@@ -360,17 +743,17 @@ class LogViewerController extends Controller
             if ($request->filled('property_search')) {
                 $totalQuery->where('properties', 'like', '%' . $request->property_search . '%');
             }
-
+            
             $totalRequests = $totalQuery->select('request_id')->distinct()->get()->count();
-
+            
             // Get all logs for these request_ids, maintaining the order from $requestIds
             $logs = collect($requestIds)->map(function ($requestId) {
                 return LogEntry::where('request_id', $requestId)
                     ->orderBy('created_at', 'asc')
-                    ->get()
-                    ->toArray();
+                ->get()
+                ->toArray();
             })->toArray();
-
+            
             return response()->json([
                 'logs' => $logs,
                 'pagination' => [
@@ -386,7 +769,7 @@ class LogViewerController extends Controller
 
         // Order and paginate
         $logs = $query->orderBy('created_at', 'desc')
-            ->paginate(config('simple-logging.viewer.per_page', 50));
+            ->paginate(config('simple-logging.viewer.per_page', 10));
 
         return response()->json([
             'logs' => $logs->items(),
@@ -528,8 +911,8 @@ class LogViewerController extends Controller
                 ? $log['properties']['memory_used'] 
                 : null;
             
-            // Process data display
-            $dataDisplay = $this->processDataDisplay($log);
+            // Process data display with correct level and method
+            $dataDisplay = $this->processDataDisplay($log, $visualIndicator, $log['message'] ?? 'Unknown');
             
             // Determine step icon class
             $stepIconClass = $this->determineStepIconClass($log['level']);
@@ -573,7 +956,7 @@ class LogViewerController extends Controller
     /**
      * Process data display for a log entry
      */
-    private function processDataDisplay(array $log): string
+    private function processDataDisplay(array $log, string $visualIndicator = '', string $methodName = ''): string
     {
         if (!isset($log['properties']) || empty($log['properties'])) {
             return '';
@@ -586,15 +969,81 @@ class LogViewerController extends Controller
         $relevantKeys = collect($properties)->keys();
         
         if (strpos($message, 'started') !== false) {
-            $relevantKeys = $relevantKeys->filter(function($key) {
+            $relevantKeys = $relevantKeys->filter(function($key) use ($log) {
+                // Remove visual_indicator completely
+                if ($key === 'visual_indicator') {
+                    return false;
+                }
+                
+                // Remove category completely
+                if ($key === 'category') {
+                    return false;
+                }
+                
+                // Remove request_info completely
+                if ($key === 'request_info') {
+                    return false;
+                }
+                
+                // Only show headers in the first step (call_depth = 1)
+                if ($key === 'headers' && ($log['call_depth'] ?? 0) !== 1) {
+                    return false;
+                }
+                
+                // Only show user_id if it has a real value
+                if ($key === 'user_id') {
+                    $value = $log['properties'][$key] ?? null;
+                    return $value !== null && $value !== 'N/A' && $value !== '';
+                }
+                
                 return in_array($key, ['headers', 'user_id', 'input_data', 'session_id', 'request_id']);
             });
         } elseif (strpos($message, 'completed') !== false) {
-            $relevantKeys = $relevantKeys->filter(function($key) {
+            $relevantKeys = $relevantKeys->filter(function($key) use ($log) {
+                // Remove visual_indicator completely
+                if ($key === 'visual_indicator') {
+                    return false;
+                }
+                
+                // Remove category completely
+                if ($key === 'category') {
+                    return false;
+                }
+                
+                // Remove request_info completely
+                if ($key === 'request_info') {
+                    return false;
+                }
+                
+                // Only show headers in the first step (call_depth = 1)
+                if ($key === 'headers' && ($log['call_depth'] ?? 0) !== 1) {
+                    return false;
+                }
+                
                 return in_array($key, ['duration_ms', 'memory_used', 'headers', 'result']);
             });
         } else {
-            $relevantKeys = $relevantKeys->filter(function($key) {
+            $relevantKeys = $relevantKeys->filter(function($key) use ($log) {
+                // Remove visual_indicator completely
+                if ($key === 'visual_indicator') {
+                    return false;
+                }
+                
+                // Remove category completely
+                if ($key === 'category') {
+                    return false;
+                }
+                
+                // Remove request_info completely
+                if ($key === 'request_info') {
+                    return false;
+                }
+                
+                // Only show headers in the first step (call_depth = 1)
+                if ($key === 'headers' && ($log['call_depth'] ?? 0) !== 1) {
+                    return false;
+                }
+                
                 return !in_array($key, ['duration_ms', 'memory_used']);
             });
         }
@@ -603,7 +1052,7 @@ class LogViewerController extends Controller
             return '';
         }
 
-        return $relevantKeys->map(function($key) use ($properties) {
+        return $relevantKeys->map(function($key) use ($properties, $visualIndicator, $methodName) {
             $value = $properties[$key] ?? 'N/A';
             
             if (is_array($value)) {
@@ -619,7 +1068,9 @@ class LogViewerController extends Controller
             
             $badgeClass = $this->getDataBadgeClass($key);
             
-            return '<span class="inline-block ' . $badgeClass . ' hover:bg-opacity-80 cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue(\'' . $key . '\', \'' . htmlspecialchars($jsonValue) . '\')" title="Click to view full value">' . $key . ': ' . htmlspecialchars($displayValue) . '</span>';
+            // Use the passed visual indicator and method name for the subtitle
+            
+            return '<span class="inline-block ' . $badgeClass . ' hover:bg-opacity-80 cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue(\'' . $key . '\', \'' . htmlspecialchars($jsonValue) . '\', \'' . $visualIndicator . '\', \'' . htmlspecialchars($methodName) . '\')" title="Click to view full value">' . $key . ': ' . htmlspecialchars($displayValue) . '</span>';
         })->join('');
     }
 
@@ -841,7 +1292,7 @@ class LogViewerController extends Controller
     private function exportToCsv($logs)
     {
         $filename = 'logs_' . Carbon::now()->format('Y-m-d_H-i-s') . '.csv';
-
+        
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
@@ -849,7 +1300,7 @@ class LogViewerController extends Controller
 
         $callback = function () use ($logs) {
             $file = fopen('php://output', 'w');
-
+            
             // Headers
             fputcsv($file, [
                 'ID', 'Request ID', 'Level', 'Message', 'Controller', 'Method',
@@ -940,6 +1391,7 @@ class LogViewerController extends Controller
         
         return [
             'request_id' => $requestId,
+            'requestId' => $requestId, // Add this for the view
             'main_log' => $this->addMicrosecondPrecision($mainLog),
             'status' => $status,
             'duration' => $duration,
