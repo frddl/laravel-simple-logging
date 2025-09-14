@@ -29,5 +29,8 @@ abstract class TestCase extends Orchestra
             'database' => ':memory:',
             'prefix' => '',
         ]);
+        
+        // Load the simple-logging config
+        $app['config']->set('simple-logging', require __DIR__.'/../src/Config/simple-logging.php');
     }
 }

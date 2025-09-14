@@ -19,6 +19,7 @@ return new class () extends Migration {
             $table->json('properties')->nullable();
             $table->string('controller', 100)->nullable();
             $table->string('method', 100)->nullable();
+            $table->integer('call_depth')->default(1);
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->text('url')->nullable();

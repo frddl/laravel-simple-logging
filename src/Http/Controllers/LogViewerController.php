@@ -18,14 +18,14 @@ class LogViewerController extends Controller
     public function index(Request $request): View
     {
         $levels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
-        
+
         // Get grouped logs for initial display
         $perPage = $request->get('per_page', 10);
         $groupedLogs = $this->getGroupedLogs($request, $perPage);
-        
+
         // Get statistics for initial display
         $statistics = $this->getStatistics($request);
-        
+
         return view('simple-logging::index', compact('levels', 'groupedLogs', 'statistics'));
     }
 
@@ -39,7 +39,7 @@ class LogViewerController extends Controller
 
         // Get unique request_ids ordered by their latest log timestamp
         $requestQuery = LogEntry::query();
-        
+
         // Apply filters
         if ($request->filled('level')) {
             $requestQuery->where('level', $request->level);
@@ -75,7 +75,7 @@ class LogViewerController extends Controller
         if ($request->filled('property_search')) {
             $requestQuery->where('properties', 'like', '%' . $request->property_search . '%');
         }
-        
+
         $requestIds = $requestQuery->select('request_id')
             ->selectRaw('MAX(created_at) as latest_log_time')
             ->groupBy('request_id')
@@ -87,7 +87,7 @@ class LogViewerController extends Controller
 
         // Get total count for pagination
         $totalQuery = LogEntry::query();
-        
+
         // Apply same filters to total count query
         if ($request->filled('level')) {
             $totalQuery->where('level', $request->level);
@@ -157,8 +157,8 @@ class LogViewerController extends Controller
     {
         try {
             $requestId = $request->get('request_id');
-            
-            if (!$requestId) {
+
+            if (! $requestId) {
                 return response()->json(['error' => 'Request ID is required'], 400);
             }
 
@@ -178,13 +178,13 @@ class LogViewerController extends Controller
             // Debug: Log the processed data
             \Log::info('Processed data for request ' . $requestId, [
                 'steps_count' => count($processedData['steps'] ?? []),
-                'has_steps' => !empty($processedData['steps']),
-                'steps' => $processedData['steps'] ?? []
+                'has_steps' => ! empty($processedData['steps']),
+                'steps' => $processedData['steps'] ?? [],
             ]);
 
             // Return the full detailed content with all tabs
             $stepsHtml = '';
-            if (!empty($processedData['steps'])) {
+            if (! empty($processedData['steps'])) {
                 foreach ($processedData['steps'] as $step) {
                     $stepsHtml .= '<div class="step-item" style="' . ($step['indent_style'] ?? '') . '">
                         <div class="flex items-start space-x-3">
@@ -212,7 +212,7 @@ class LogViewerController extends Controller
                     </div>';
                 }
             }
-            
+
             // Generate Request tab content
             $requestInfo = $processedData['request_info'] ?? [];
             $requestHtml = '<div class="space-y-6">
@@ -546,16 +546,16 @@ class LogViewerController extends Controller
                     }
                 });
             </script>', 200, ['Content-Type' => 'text/html']);
-            
+
         } catch (\Exception $e) {
             \Log::error('Error in getLogDetails: ' . $e->getMessage(), [
                 'request_id' => $request->get('request_id'),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Internal server error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -568,24 +568,24 @@ class LogViewerController extends Controller
         // If only count is requested, return just the count
         if ($request->boolean('count_only')) {
             $query = LogEntry::query();
-            
+
             // Apply basic filters for count
             if ($request->filled('level')) {
                 $query->where('level', $request->level);
             }
-            
+
             if ($request->filled('type')) {
                 $query->whereJsonContains('context->type', $request->type);
             }
-            
+
             if ($request->filled('date_from')) {
                 $query->where('created_at', '>=', $request->date_from);
             }
-            
+
             if ($request->filled('date_to')) {
                 $query->where('created_at', '<=', $request->date_to);
             }
-            
+
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
                     $q->where('message', 'like', '%' . $request->search . '%')
@@ -593,9 +593,9 @@ class LogViewerController extends Controller
                       ->orWhere('properties', 'like', '%' . $request->search . '%');
                 });
             }
-            
+
             $totalLogs = $query->count();
-            
+
             return response()->json([
                 'total_logs' => $totalLogs,
             ]);
@@ -655,11 +655,11 @@ class LogViewerController extends Controller
             $perPage = $request->get('per_page', config('simple-logging.viewer.per_page', 50));
             $page = $request->get('page', 1);
             $offset = ($page - 1) * $perPage;
-            
+
             // Get unique request_ids ordered by their latest log timestamp
             // Create a fresh query to avoid conflicts with existing ordering
             $requestQuery = LogEntry::query();
-            
+
             // Apply same filters to request query
             if ($request->filled('level')) {
                 $requestQuery->where('level', $request->level);
@@ -695,7 +695,7 @@ class LogViewerController extends Controller
             if ($request->filled('property_search')) {
                 $requestQuery->where('properties', 'like', '%' . $request->property_search . '%');
             }
-            
+
             $requestIds = $requestQuery->select('request_id')
                 ->selectRaw('MAX(created_at) as latest_log_time')
                 ->groupBy('request_id')
@@ -704,10 +704,10 @@ class LogViewerController extends Controller
                 ->limit($perPage)
                 ->pluck('request_id')
                 ->toArray();
-            
+
             // Get total count for pagination (recreate query with same filters)
             $totalQuery = LogEntry::query();
-            
+
             // Apply same filters to total count query
             if ($request->filled('level')) {
                 $totalQuery->where('level', $request->level);
@@ -743,9 +743,9 @@ class LogViewerController extends Controller
             if ($request->filled('property_search')) {
                 $totalQuery->where('properties', 'like', '%' . $request->property_search . '%');
             }
-            
+
             $totalRequests = $totalQuery->select('request_id')->distinct()->get()->count();
-            
+
             // Get all logs for these request_ids, maintaining the order from $requestIds
             $logs = collect($requestIds)->map(function ($requestId) {
                 return LogEntry::where('request_id', $requestId)
@@ -753,7 +753,7 @@ class LogViewerController extends Controller
                 ->get()
                 ->toArray();
             })->toArray();
-            
+
             return response()->json([
                 'logs' => $logs,
                 'pagination' => [
@@ -841,30 +841,30 @@ class LogViewerController extends Controller
     {
         return collect($logs)->map(function ($logsArray) {
             $requestId = $logsArray[0]['request_id'];
-            
+
             // Find main log (started) and completed log
-            $mainLog = collect($logsArray)->first(function($log) {
+            $mainLog = collect($logsArray)->first(function ($log) {
                 return strpos($log['message'], 'started') !== false;
             }) ?? $logsArray[0];
-            
+
             // Find the completed log that matches the main method
             $mainMethodName = '';
             if ($mainLog && strpos($mainLog['message'], 'started') !== false) {
                 $mainMethodName = str_replace(' started', '', $mainLog['message']);
             }
-            
-            $completedLog = collect($logsArray)->first(function($log) use ($mainMethodName) {
-                return strpos($log['message'], 'completed') !== false && 
+
+            $completedLog = collect($logsArray)->first(function ($log) use ($mainMethodName) {
+                return strpos($log['message'], 'completed') !== false &&
                        strpos($log['message'], $mainMethodName) !== false;
             });
-            
-            $errorLog = collect($logsArray)->first(function($log) {
+
+            $errorLog = collect($logsArray)->first(function ($log) {
                 return strpos($log['message'], 'failed') !== false;
             });
-            
+
             // Calculate status
             $status = $errorLog ? 'error' : ($completedLog ? 'success' : 'info');
-            
+
             // Calculate total duration from step durations
             $totalDuration = 0;
             foreach ($logsArray as $log) {
@@ -873,10 +873,10 @@ class LogViewerController extends Controller
                 }
             }
             $duration = $totalDuration > 0 ? round($totalDuration, 2) . 'ms' : '-';
-            
+
             // Extract request info
             $requestInfo = $this->extractRequestInfo($mainLog);
-            
+
             return [
                 'request_id' => $requestId,
                 'main_log' => $this->addMicrosecondPrecision($mainLog),
@@ -900,23 +900,23 @@ class LogViewerController extends Controller
             // Determine category and visual indicator
             $category = $this->determineCategory($log['message']);
             $visualIndicator = 'L' . ($log['call_depth'] ?? 0);
-            
+
             // Calculate step duration
-            $stepDuration = isset($log['properties']['duration_ms']) && is_numeric($log['properties']['duration_ms']) 
-                ? round($log['properties']['duration_ms'], 2) 
+            $stepDuration = isset($log['properties']['duration_ms']) && is_numeric($log['properties']['duration_ms'])
+                ? round($log['properties']['duration_ms'], 2)
                 : null;
-            
+
             // Calculate memory used
-            $memoryUsed = isset($log['properties']['memory_used']) && is_numeric($log['properties']['memory_used']) 
-                ? $log['properties']['memory_used'] 
+            $memoryUsed = isset($log['properties']['memory_used']) && is_numeric($log['properties']['memory_used'])
+                ? $log['properties']['memory_used']
                 : null;
-            
+
             // Process data display with correct level and method
             $dataDisplay = $this->processDataDisplay($log, $visualIndicator, $log['message'] ?? 'Unknown');
-            
+
             // Determine step icon class
             $stepIconClass = $this->determineStepIconClass($log['level']);
-            
+
             return [
                 'log' => $this->addMicrosecondPrecision($log),
                 'category' => $category,
@@ -950,6 +950,7 @@ class LogViewerController extends Controller
         if (strpos($message, 'config') !== false || strpos($message, 'setting') !== false) {
             return 'Configuration';
         }
+
         return 'Actions';
     }
 
@@ -958,93 +959,94 @@ class LogViewerController extends Controller
      */
     private function processDataDisplay(array $log, string $visualIndicator = '', string $methodName = ''): string
     {
-        if (!isset($log['properties']) || empty($log['properties'])) {
+        if (! isset($log['properties']) || empty($log['properties'])) {
             return '';
         }
 
         $properties = $log['properties'];
         $message = $log['message'];
-        
+
         // Determine relevant keys based on message type
         $relevantKeys = collect($properties)->keys();
-        
+
         if (strpos($message, 'started') !== false) {
-            $relevantKeys = $relevantKeys->filter(function($key) use ($log) {
+            $relevantKeys = $relevantKeys->filter(function ($key) use ($log) {
                 // Remove visual_indicator completely
                 if ($key === 'visual_indicator') {
                     return false;
                 }
-                
+
                 // Remove category completely
                 if ($key === 'category') {
                     return false;
                 }
-                
+
                 // Remove request_info completely
                 if ($key === 'request_info') {
                     return false;
                 }
-                
+
                 // Only show headers in the first step (call_depth = 1)
                 if ($key === 'headers' && ($log['call_depth'] ?? 0) !== 1) {
                     return false;
                 }
-                
+
                 // Only show user_id if it has a real value
                 if ($key === 'user_id') {
                     $value = $log['properties'][$key] ?? null;
+
                     return $value !== null && $value !== 'N/A' && $value !== '';
                 }
-                
+
                 return in_array($key, ['headers', 'user_id', 'input_data', 'session_id', 'request_id']);
             });
         } elseif (strpos($message, 'completed') !== false) {
-            $relevantKeys = $relevantKeys->filter(function($key) use ($log) {
+            $relevantKeys = $relevantKeys->filter(function ($key) use ($log) {
                 // Remove visual_indicator completely
                 if ($key === 'visual_indicator') {
                     return false;
                 }
-                
+
                 // Remove category completely
                 if ($key === 'category') {
                     return false;
                 }
-                
+
                 // Remove request_info completely
                 if ($key === 'request_info') {
                     return false;
                 }
-                
+
                 // Only show headers in the first step (call_depth = 1)
                 if ($key === 'headers' && ($log['call_depth'] ?? 0) !== 1) {
                     return false;
                 }
-                
+
                 return in_array($key, ['duration_ms', 'memory_used', 'headers', 'result']);
             });
         } else {
-            $relevantKeys = $relevantKeys->filter(function($key) use ($log) {
+            $relevantKeys = $relevantKeys->filter(function ($key) use ($log) {
                 // Remove visual_indicator completely
                 if ($key === 'visual_indicator') {
                     return false;
                 }
-                
+
                 // Remove category completely
                 if ($key === 'category') {
                     return false;
                 }
-                
+
                 // Remove request_info completely
                 if ($key === 'request_info') {
                     return false;
                 }
-                
+
                 // Only show headers in the first step (call_depth = 1)
                 if ($key === 'headers' && ($log['call_depth'] ?? 0) !== 1) {
                     return false;
                 }
-                
-                return !in_array($key, ['duration_ms', 'memory_used']);
+
+                return ! in_array($key, ['duration_ms', 'memory_used']);
             });
         }
 
@@ -1052,9 +1054,9 @@ class LogViewerController extends Controller
             return '';
         }
 
-        return $relevantKeys->map(function($key) use ($properties, $visualIndicator, $methodName) {
+        return $relevantKeys->map(function ($key) use ($properties, $visualIndicator, $methodName) {
             $value = $properties[$key] ?? 'N/A';
-            
+
             if (is_array($value)) {
                 $displayValue = '[Array]';
                 $jsonValue = json_encode($value);
@@ -1065,11 +1067,11 @@ class LogViewerController extends Controller
                 $displayValue = $value;
                 $jsonValue = json_encode($value);
             }
-            
+
             $badgeClass = $this->getDataBadgeClass($key);
-            
+
             // Use the passed visual indicator and method name for the subtitle
-            
+
             return '<span class="inline-block ' . $badgeClass . ' hover:bg-opacity-80 cursor-pointer px-2 py-1 rounded mr-1 transition-colors text-xs" onclick="showDataValue(\'' . $key . '\', \'' . htmlspecialchars($jsonValue) . '\', \'' . $visualIndicator . '\', \'' . htmlspecialchars($methodName) . '\')" title="Click to view full value">' . $key . ': ' . htmlspecialchars($displayValue) . '</span>';
         })->join('');
     }
@@ -1089,7 +1091,7 @@ class LogViewerController extends Controller
             'request_id' => 'bg-pink-100 text-pink-800',
             'result' => 'bg-emerald-100 text-emerald-800',
         ];
-        
+
         return $classes[$key] ?? 'bg-gray-100 text-gray-800';
     }
 
@@ -1121,7 +1123,7 @@ class LogViewerController extends Controller
     {
         $properties = $mainLog['properties'] ?? [];
         $requestInfo = $properties['requestInfo'] ?? [];
-        
+
         return [
             'controller' => $mainLog['controller'] ?? 'Unknown',
             'method' => $mainLog['method'] ?? 'Unknown',
@@ -1144,7 +1146,7 @@ class LogViewerController extends Controller
             $log['created_at_timestamp'] = $carbon->timestamp;
             $log['created_at_microseconds'] = $carbon->micro;
         }
-        
+
         return $log;
     }
 
@@ -1292,7 +1294,7 @@ class LogViewerController extends Controller
     private function exportToCsv($logs)
     {
         $filename = 'logs_' . Carbon::now()->format('Y-m-d_H-i-s') . '.csv';
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
@@ -1300,7 +1302,7 @@ class LogViewerController extends Controller
 
         $callback = function () use ($logs) {
             $file = fopen('php://output', 'w');
-            
+
             // Headers
             fputcsv($file, [
                 'ID', 'Request ID', 'Level', 'Message', 'Controller', 'Method',
@@ -1347,30 +1349,30 @@ class LogViewerController extends Controller
     private function processDetailedLogData(array $logs): array
     {
         $requestId = $logs[0]['request_id'];
-        
+
         // Find main log (started) and completed log
-        $mainLog = collect($logs)->first(function($log) {
+        $mainLog = collect($logs)->first(function ($log) {
             return strpos($log['message'], 'started') !== false;
         }) ?? $logs[0];
-        
+
         // Find the completed log that matches the main method
         $mainMethodName = '';
         if ($mainLog && strpos($mainLog['message'], 'started') !== false) {
             $mainMethodName = str_replace(' started', '', $mainLog['message']);
         }
-        
-        $completedLog = collect($logs)->first(function($log) use ($mainMethodName) {
-            return strpos($log['message'], 'completed') !== false && 
+
+        $completedLog = collect($logs)->first(function ($log) use ($mainMethodName) {
+            return strpos($log['message'], 'completed') !== false &&
                    strpos($log['message'], $mainMethodName) !== false;
         });
-        
-        $errorLog = collect($logs)->first(function($log) {
+
+        $errorLog = collect($logs)->first(function ($log) {
             return strpos($log['message'], 'failed') !== false;
         });
-        
+
         // Calculate status
         $status = $errorLog ? 'error' : ($completedLog ? 'success' : 'info');
-        
+
         // Calculate total duration from step durations
         $totalDuration = 0;
         foreach ($logs as $log) {
@@ -1379,16 +1381,16 @@ class LogViewerController extends Controller
             }
         }
         $duration = $totalDuration > 0 ? round($totalDuration, 2) . 'ms' : '-';
-        
+
         // Process steps for display
         $steps = $this->processStepsForDisplay($logs);
-        
+
         // Extract request info
         $requestInfo = $this->extractRequestInfo($mainLog);
-        
+
         // Get response data
         $responseData = $this->extractResponseData($completedLog);
-        
+
         return [
             'request_id' => $requestId,
             'requestId' => $requestId, // Add this for the view
@@ -1409,7 +1411,7 @@ class LogViewerController extends Controller
      */
     private function extractResponseData($completedLog): array
     {
-        if (!$completedLog) {
+        if (! $completedLog) {
             return [];
         }
 

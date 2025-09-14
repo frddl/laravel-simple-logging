@@ -68,6 +68,7 @@ class EntryMethodTrackingTest extends TestCase
         $controller->directLog('Test message');
 
         $log = LogEntry::first();
+        $this->assertNotNull($log, 'Log entry should be created');
         $this->assertEquals('unknown', $log->method);
     }
 
