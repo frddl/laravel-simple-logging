@@ -491,9 +491,6 @@ class LogViewerController extends Controller
             }
             $duration = $totalDuration > 0 ? round($totalDuration, 2) . 'ms' : '-';
             
-            // Process steps for display
-            $steps = $this->processStepsForDisplay($logsArray);
-            
             // Extract request info
             $requestInfo = $this->extractRequestInfo($mainLog);
             
@@ -506,7 +503,7 @@ class LogViewerController extends Controller
                 'has_errors' => collect($logsArray)->contains('level', 'error'),
                 'has_warnings' => collect($logsArray)->contains('level', 'warning'),
                 'request_info' => $requestInfo,
-                'steps' => $steps,
+                // Note: steps are loaded on-demand via API call, not included in initial data
             ];
         })->toArray();
     }
