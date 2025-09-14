@@ -1052,12 +1052,7 @@
             }
             
             if (expandedRows.has(requestId)) {
-                content.classList.remove('show');
-                chevron.classList.remove('fa-chevron-up');
-                chevron.classList.add('fa-chevron-down');
-            }
-            
-            if (expandedRows.has(requestId)) {
+                // Collapse the card
                 content.classList.remove('show');
                 chevron.classList.remove('fa-chevron-up');
                 chevron.classList.add('fa-chevron-down');
