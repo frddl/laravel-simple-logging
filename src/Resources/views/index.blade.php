@@ -1542,14 +1542,14 @@
             stopLiveMode();
         });
 
-        // Show data value in popup
+        // Show data value in beautiful modal
         function showDataValue(key, value) {
             try {
                 const parsedValue = JSON.parse(value);
                 const formattedValue = typeof parsedValue === 'object' ? JSON.stringify(parsedValue, null, 2) : parsedValue;
-                alert(`${key}: ${formattedValue}`);
+                showDataModal(`${key}`, parsedValue, `Data value for: ${key}`);
             } catch (e) {
-                alert(`${key}: ${value}`);
+                showDataModal(`${key}`, value, `Data value for: ${key}`);
             }
         }
 
